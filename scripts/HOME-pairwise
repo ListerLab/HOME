@@ -1,0 +1,196 @@
+
+import argparse 
+import numpy as np
+import os
+import glob
+import subprocess 
+import sys
+import shutil
+import functools
+import pandas as pd
+import multiprocessing as mp
+from HOME import HOME_functions as ho
+
+np.set_printoptions(threshold=np.inf,suppress=True,linewidth=np.inf,precision=3)
+
+parser = argparse.ArgumentParser(description='HOME -- HISTOGRAM Of METHYLATION')
+
+parser.add_argument('-b','--pathsample1', help='path of the first sample methylome', required=True, nargs='+')
+parser.add_argument('-a','--pathsample2',  help='path of the second sample methylome', required=True, nargs='+')
+parser.add_argument('-t','--type', help='type of class', choices=["CG","CHG","CHH","CHN","CNN"],required=True, type=str)
+parser.add_argument('-o','--outputpath', help='path where the DMRs will be saved', required=True)
+parser.add_argument('-fn','--outputfilename', help='filename of the where the output DMRs will be saved', required=False, type=str,default="HOME_DMRs.txt")
+parser.add_argument('-sc','--scorecutoff',  help='min score required to cluster the DMR',choices=np.round(np.linspace(0,1,20,endpoint=False),decimals=2), required=False, type=float,default=0.1)
+parser.add_argument('-p','--pruncutoff', help='prunning cutoff for boundaries', required=False,choices=np.round(np.arange(0,0.5,0.1),decimals=1), type=float,default=0.1)
+parser.add_argument('-ml','--minlength', help='minimum length of DMRs to reported', required=False, type=int,default=50)
+parser.add_argument('-ncb','--numcb',  help='number of Cs required between DMRs to keep them seperate', required=False, type=int,default=5)
+parser.add_argument('-md','--mergedist',  help='distance between DMRs to merge', required=False, type=int,default=500)
+parser.add_argument('-ms','--mergescore',  help='minimum mean score required between DMRs to keep them seperate',choices=np.linspace(0,0.1,10,endpoint=False), required=False, type=float,default=0.02)
+parser.add_argument('-npp','--numprocess', help='number of process to be run at a time', required=False, type=int,default=5)
+parser.add_argument('-mc','--minc', help='minimum number of C in a DMR to reported', required=False, type=int,default=5)
+parser.add_argument('-d','--delta', help='minimum average difference in methylation required', required=False, type=float,default=0.1)
+parser.add_argument('-prn','--prunningC', help='number of Cs required for prunning', required=False, type=int,default=3)
+
+o=parser.parse_args()
+input_file1=o.pathsample1
+input_file2=o.pathsample2
+try:
+    cwd = os.getcwd()
+    if not os.path.exists((o.outputpath+'/temp_HOME')):
+        os.makedirs(o.outputpath+'/temp_HOME')
+    for j in xrange(len(input_file1)):
+        
+        if not os.path.exists((o.outputpath+'/temp_HOME'+'/sample1_rep'+str(j+1))):
+            os.makedirs(o.outputpath+'/temp_HOME'+'/sample1_rep'+str(j+1))
+            os.chdir(o.outputpath+'/temp_HOME'+'/sample1_rep'+str(j+1))
+            if input_file1[j].endswith('.gz'):
+                com='zcat'+' '+input_file1[j]+'''| awk '{print $0 >> $1".tsv"}' '''
+            else:
+                com='''awk '{print $0 >> $1".tsv"}' ''' + input_file1[j]
+            subprocess.call(com, shell=True)
+              
+            input_file1[j] = os.getcwd()
+            os.chdir(cwd)
+    for j in xrange(len(input_file2)): 
+        if not os.path.exists((o.outputpath+'/temp_HOME'+'/sample2_rep'+str(j+1))):
+            os.makedirs(o.outputpath+'/temp_HOME'+'/sample2_rep'+str(j+1))
+            os.chdir(o.outputpath+'/temp_HOME'+'/sample2_rep'+str(j+1))
+            if input_file2[j].endswith('.gz'):
+                com='zcat'+' '+input_file2[j]+'''| awk '{print $0 >> $1".tsv"}' '''
+            else:
+                com='''awk '{print $0 >> $1".tsv"}' ''' + input_file2[j]
+            subprocess.call(com, shell=True)
+            
+            input_file2[j] = os.getcwd()
+            os.chdir(cwd)
+    
+    s=[ os.path.splitext(os.path.basename(x))[0] for x in glob.glob(input_file1[0]+'/*.tsv')]
+    os.chdir(cwd)
+    if not os.path.exists((o.outputpath+'/HOME_DMRs')):
+        os.makedirs(o.outputpath+'/HOME_DMRs')
+    if not os.path.exists((o.outputpath+'/HOME_DMRs_filtered')):
+        os.makedirs(o.outputpath+'/HOME_DMRs_filtered')
+    sc=o.scorecutoff
+    prn=o.prunningC
+    tr=o.pruncutoff
+    minlen=o.minlength
+    classes=o.type
+    score_thres=o.mergescore
+    dis_thres=o.mergedist
+    ncb=o.numcb
+    mc=o.minc
+    d=o.delta
+    npp=o.numprocess
+    fn=o.outputfilename
+    "handle any number of replicates as long as it is 2+ in all groups but cannot handle 1 replicate in 1 group and multiple in the other"
+    if (len(input_file1)==1 and len(input_file2)>1) or (len(input_file2)==1 and len(input_file1)>1):
+        sys.exit('error: cannot handle 1 replicate in 1 group and more than 1 in other')
+    print"Preparing the DMRs from HOME....." 
+    print "GOOD LUCK !"
+    pd.options.mode.chained_assignment = None
+    
+    
+    
+    merge = functools.partial(pd.merge, how='inner', on=['chr','pos',"strand","type"])
+except:
+    pass    
+def main(c):
+  
+    
+    val=[]
+    d_rep={}
+    for j in xrange(len(input_file1)):
+        c1=["chr", "pos", "strand", "type", "mc_cont"+"_rep"+str(j+1), "h_cont"+"_rep"+str(j+1)]
+        
+        d_rep[j]=pd.read_table(input_file1[j]+'/'+c+'.tsv',header=None, names=c1)
+        
+        if classes=="CG":
+            d_rep[j]=d_rep[j].loc[d_rep[j]['type'].str[:2] == "CG"]
+        elif classes=="CHG":
+            
+            d_rep[j]=d_rep[j].loc[(d_rep[j]['type'].str[1:2]!="G") & (d_rep[j]['type'].str[2:3]=="G")]
+        elif classes=="CHH":
+            
+            d_rep[j]=d_rep[j].loc[(d_rep[j]['type'].str[1:2]!="G") & (d_rep[j]['type'].str[2:3]!="G")] 
+        elif classes=="CHN":
+            
+            d_rep[j]=d_rep[j].loc[(d_rep[j]['type'].str[1:2]!="G") ] 
+        else:
+            d_rep[j]=d_rep[j]
+        
+    val.append(functools.reduce(merge, d_rep.values()))    
+    
+    d_rep={}
+    for j in xrange(len(input_file2)):
+        c1=["chr", "pos", "strand", "type", "mc_case"+"_rep"+str(j+1), "h_case"+"_rep"+str(j+1)]
+        d_rep[j]=pd.read_table(input_file2[j]+'/'+c+'.tsv',header=None, names=c1)
+        if classes=="CG":
+            d_rep[j]=d_rep[j].loc[d_rep[j]['type'].str[:2] == "CG"]
+        elif classes=="CHG":
+            
+            d_rep[j]=d_rep[j].loc[(d_rep[j]['type'].str[1:2]!="G") & (d_rep[j]['type'].str[2:3]=="G")]
+        elif classes=="CHH":
+            
+            d_rep[j]=d_rep[j].loc[(d_rep[j]['type'].str[1:2]!="G") & (d_rep[j]['type'].str[2:3]!="G")] 
+        elif classes=="CHN":
+            
+            d_rep[j]=d_rep[j].loc[(d_rep[j]['type'].str[1:2]!="G") ] 
+        else:
+            d_rep[j]=d_rep[j]
+        
+    val.append(functools.reduce(merge, d_rep.values()))
+    
+    df=functools.reduce(merge, val)
+    
+    df=df.sort_values(['pos'])
+    del(val)
+    
+    df1=ho.format_allc(df, classes)
+    
+    
+    del(df) 
+    if len(input_file1)>1 and len(input_file2)>1:
+        df3=ho.pval_cal_withrep(df1)
+    else:
+        df3=ho.pval_cal_withoutrep(df1)
+    
+    if classes=="CG" or classes=="CHG" or classes=="CHH" or classes=="CHN":
+        input_file_path=os.getcwd()+'/training_data/training_data_CG.txt'
+        
+        model_path=os.getcwd()+'/saved_model/saved_model_CG.pickle'
+        
+        k=ho.norm_slidingwin_predict_CG(df3,input_file_path,model_path)
+    else:
+        input_file_path=os.getcwd()+'/training_data/training_data_nonCG.txt'
+        
+        model_path=os.getcwd()+'/saved_model/saved_model_nonCG.pickle'
+        k=ho.norm_slidingwin_predict_nonCG(df3,input_file_path,model_path)
+   
+    
+    dmrs=ho.clustandtrim(k,df3,sc,tr,dis_thres,ncb,score_thres,prn)
+    del(k,df3)
+    dmrs_filtered=ho.filterdmr(dmrs,minlen,mc,d)
+    
+    if len(dmrs)> 1: 
+        dmr_final=pd.concat([df1.chr[0:len(dmrs)],dmrs],axis=1)
+        dmr_final['chr'] = dmr_final['chr'].astype(str)
+        dmr_final.to_csv(o.outputpath+'/HOME_DMRs'+"/"+"HOME_DMR_{c}.txt".format(c=c),header=True, index=False,sep='\t')
+        print "DMRs for {c} done".format(c=c)
+    if len(dmrs_filtered)> 1: 
+        dmr_final=pd.concat([df1.chr[0:len(dmrs_filtered)],dmrs_filtered],axis=1)
+        dmr_final['chr'] = dmr_final['chr'].astype(str)
+        dmr_final.to_csv(o.outputpath+'/HOME_DMRs_filtered'+"/"+"HOME_DMR_{c}.txt".format(c=c),header=True, index=False,sep='\t')    
+        return 
+if __name__ == "__main__":
+  try: 
+    pool = mp.Pool(processes=npp)
+    process = [pool.apply_async(main, args=(dx,)) for dx in s]
+    
+    pool.close()
+    output = [p.get() for p in process]
+    
+    shutil.rmtree(o.outputpath+'/temp_HOME', ignore_errors=True)
+    print "Congratulations the DMRs are ready for you"
+  except :
+      shutil.rmtree(o.outputpath+'/temp_HOME', ignore_errors=True)
+      print "error in the files"
