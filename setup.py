@@ -12,9 +12,9 @@ setup(
     install_requires = [
         'numpy==1.10.1',
         'pandas==0.17.1',
+        'scipy==0.16.0',
         'rpy2==2.7.7',
         'scikit-learn==0.16.1',
-        'scipy==0.16.0',
         'statsmodels==0.6.1',
     ],
     author_email = 'akanksha.iitkgp.2012@gmail.com',
