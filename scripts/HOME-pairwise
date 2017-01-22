@@ -25,7 +25,7 @@ parser.add_argument('-p','--pruncutoff', help='prunning cutoff for boundaries', 
 parser.add_argument('-ml','--minlength', help='minimum length of DMRs to reported', required=False, type=int,default=50)
 parser.add_argument('-ncb','--numcb',  help='number of Cs required between DMRs to keep them seperate', required=False, type=int,default=5)
 parser.add_argument('-md','--mergedist',  help='distance between DMRs to merge', required=False, type=int,default=500)
-parser.add_argument('-ms','--mergescore',  help='minimum mean score required between DMRs to keep them seperate',choices=np.linspace(0,0.1,10,endpoint=False), required=False, type=float,default=0.02)
+#parser.add_argument('-ms','--mergescore',  help='minimum mean score required between DMRs to keep them seperate',choices=np.linspace(0,0.1,10,endpoint=False), required=False, type=float,default=0.02)
 parser.add_argument('-npp','--numprocess', help='number of process to be run at a time', required=False, type=int,default=5)
 parser.add_argument('-mc','--minc', help='minimum number of C in a DMR to reported', required=False, type=int,default=5)
 parser.add_argument('-d','--delta', help='minimum average difference in methylation required', required=False, type=float,default=0.1)
@@ -75,7 +75,7 @@ try:
     tr=o.pruncutoff
     minlen=o.minlength
     classes=o.type
-    score_thres=o.mergescore
+    #score_thres=o.mergescore
     dis_thres=o.mergedist
     ncb=o.numcb
     mc=o.minc
@@ -167,7 +167,7 @@ def main(c):
         k=ho.norm_slidingwin_predict_nonCG(df3,input_file_path,model_path)
    
     
-    dmrs=ho.clustandtrim(k,df3,sc,tr,dis_thres,ncb,score_thres,prn)
+    dmrs=ho.clustandtrim(k,df3,sc,tr,dis_thres,ncb,prn)
     del(k,df3)
     dmrs_filtered=ho.filterdmr(dmrs,minlen,mc,d)
     
