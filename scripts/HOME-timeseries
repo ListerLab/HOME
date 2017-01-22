@@ -11,7 +11,7 @@ import pandas as pd
 import multiprocessing as mp
 from HOME import HOME_timeseries_functions as ho
 np.set_printoptions(threshold=np.inf,suppress=True,linewidth=np.inf,precision=3)
-parser = argparse.ArgumentParser(description='HOME -- HISTOGRAM Of METHYLATION')
+parser = argparse.ArgumentParser(description='HOME -- HISTOGRAM Of METHYLATION',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 parser.add_argument('-i','--pathsamples', help='path of sample methylomes', required=True, nargs='+')
 parser.add_argument('-nr','--numofrep', help='number of replicates for each sample', required=True, nargs='+',type=int)

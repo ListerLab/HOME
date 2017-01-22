@@ -13,7 +13,7 @@ from HOME import HOME_functions as ho
 
 np.set_printoptions(threshold=np.inf,suppress=True,linewidth=np.inf,precision=3)
 
-parser = argparse.ArgumentParser(description='HOME -- HISTOGRAM Of METHYLATION')
+parser = argparse.ArgumentParser(description='HOME -- HISTOGRAM Of METHYLATION',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 parser.add_argument('-b','--pathsample1', help='path of the first sample methylome', required=True, nargs='+')
 parser.add_argument('-a','--pathsample2',  help='path of the second sample methylome', required=True, nargs='+')
