@@ -177,3 +177,9 @@ Comb1-n denotes the pairwise comparisons for each combination of samples. It rep
 #Required tools
 
 [python 2.7](https://www.python.org/download/releases/2.7/)
+[numpy v1.10.1](https://pypi.python.org/pypi/numpy/1.10.1)
+[pandas v0.17.1](https://pypi.python.org/pypi/pandas/0.17.1/)
+[scipy v0.16.0](https://pypi.python.org/pypi/scipy/0.16.0)
+[scikit-learn v0.16.1](https://pypi.python.org/pypi/scikit-learn/0.16.1)
+[statsmodels v0.6.1](https://pypi.python.org/pypi/statsmodels/0.6.1)
+[rpy2 v2.7.7](https://pypi.python.org/pypi/rpy2/2.7.7)
