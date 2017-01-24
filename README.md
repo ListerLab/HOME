@@ -43,7 +43,7 @@ chr1	15821	-	CHH	7	22
 chr1	15823	-	CHH	0	2
 chr1	15825	-	CHH	11	19
 ```
-**DMR detection for two group comparison:**
+**DMR detection for two group comparison: Pairwise**
 
 ```
 HOME-pairwise 	-t [CG/CHG/CHH/CHN/CNN]	 -a [path of sample1 (including filename)]	 -b [path of case (including filename)] 	-o [output path]
@@ -68,7 +68,7 @@ Required arguments:
 
 Optional arguments: 
 ```
-Parameter			      default				description	
+Parameter			           default				description	
 -sc --SVMscorecutoff 		  0.1 			the score from the classifier for each C position 
 -p --pruncutoff           0.1 	    the SVM score checked for consecutive C’s from both ends to refine the boundaries.
 -ml --minlength  		      50	      minimum length of DMRs required to be reported 
@@ -79,3 +79,54 @@ Parameter			      default				description
 -d—delta			            0.1     	minimum average difference in methylation required in a DMR 
 -prn--prunningC			    	3 	      number of consecutives C’s to be considered for pruning for boundary refinement
 ```
+
+**Parameter –sc**
+
+HOME assigns a score from the classifier to each C position based on the histogram features. This score is then used to cluster the C’s and call the DMRs. The user can set a lower score cutoff if the DMRs seems to be missing or DMR boundaries seems to be missing the differential methylated cytosine near the boundaries. Similarly, the user can increase the cutoff if the boundaries of DMRs seems to be extended. The score ranges from 0-1 and the default is set to 0.1. 
+
+*NOTE: the default score is set after rigorous testing on various data sets and need not to be varied in most of the cases. The default should only be changed after proper visualization of the DMRs on the browser. *     
+
+**Parameter –p**
+
+This parameter controls boundary accuracy of the DMRs. After the DMRs are called they are then pruned based on the scores for the consecutive C’s on both ends. The user can increase the cutoff if the boundaries seems to be extending too far. Similarly the user can lower the cutoff if the DMR boundaries seems to be missing the differential methylated C’s. The range is from 0 to 0.5 and the default is 0.1. Please note that similar to parameter –sc this parameter need not to be altered in most of the cases and should only be changed after proper visual inspection of the DMRs.
+
+ **Parameter –ml**
+
+This parameters sets minimum length (in terms of base pairs) for a DMR to be reported. 
+The DMRs below this length will be skipped and not reported in the filtered DMR output file. The default is 50bp.
+
+**Parameter –ncb**
+This parameter controls when the smaller DMRs should be merged into one. It controls minimum number of C’s required between DMRs to keep them as separate DMRs.  It works in relation with parameter –md (described below). The default is 5 C’s. So, if the number of C’s are less than 5 and the distance is less than 500bp (default for --md) between two consecutive DMRs it will be merged into one single DMR.
+
+**Parameter –md **
+
+This parameter allows the user to set the merge distance between two consecutive DMRs. The defaults is 500bp. 
+
+**Parameter –npp **
+
+This parameter allows the user to set the number of parallel process to run at a time. The default is 5. 
+
+**Parameter –mc**
+
+ This parameter allows the user to set minimum number of C’s present in a DMRs to be reported. Any DMR with less than the set value will not be reported in the filtered DMR file. The default is 5.
+
+**Parameter –d**
+
+This parameter sets minimum average methylation difference present for a DMR to be reported. The DMRs with less than the set value will not be reported in the filtered DMR file. The default is 0.1. 
+
+**Parameter –prn**
+
+This parameter is used in relation to parameter –p (described above). This controls the number of consecutive C’s to be considered from both ends for boundary refinement. The default is 3. Alteration of this parameter should only be done after proper visual inspection of the DMRs. 
+
+**Output format**
+
+HOME-pairwise output two files filtered and unfiltered files. The output format is:
+
+```
+chr	start	end	status	numC	mean_meth1	mean_meth2	delta	Avg_coverage1	Avg_coverage2	len
+```
+
+Here, status refers to state of DMR (hyper/hypo). Mean_meth1 and mean_meth2 refers to mean methylation level for sample1 and 2 respectively.   Delta refers to the difference in mean methylation level for two samples. Avg_coverage1 and avg_covereage2 gives the mean coverage for both samples. 
+
+The filtered output file is generated from the unfiltered file based on parameter mc, d and ml. 
+
