@@ -226,5 +226,9 @@ pip install rpy2
 
 ```
 
-
+Stop HOME execution in middle
+```
+cntrl+z
+```
+*Note: always delete the directories created by HOME run if stopped in middle*
 
