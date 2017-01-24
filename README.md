@@ -131,7 +131,7 @@ Here, status refers to state of DMR (hyper/hypo). Mean_meth1 and mean_meth2 refe
 
 The filtered output file is generated from the unfiltered file based on parameter mc, d and ml. 
 
-**DMR detection for more than two groups: time series
+**DMR detection for more than two groups: time series**
 
 ```
 HOME-timeseries 	-t [CG/CHG/CHH/CHN/CNN]	-i [sample paths]		–nr [number of replicates for each sample]		-o [output path]
@@ -176,4 +176,4 @@ Comb1-n denotes the pairwise comparisons for each combination of samples. It rep
 
 #Required tools
 
-[Link]python 2.7
+[python 2.7]
