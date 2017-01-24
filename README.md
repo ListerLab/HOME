@@ -189,3 +189,42 @@ Comb1-n denotes the pairwise comparisons for each combination of samples. It rep
 [statsmodels v0.6.1](https://pypi.python.org/pypi/statsmodels/0.6.1)
 
 [rpy2 v2.7.7](https://pypi.python.org/pypi/rpy2/2.7.7)
+
+#Troubleshooting
+
+Error with rpy2 installation
+
+*make sure R is build with shared library*
+
+1. Install R with shared library
+
+```
+wget [R](https://cran.rstudio.com/src/base/R-3/R-3.2.2.tar.gz)
+
+tar -xzf R-3.2.2.tar.gz
+
+cd R-3.2.2
+
+./configure --prefix{path_to_R} --enable-R-shlib
+
+make
+
+make install
+
+Export R_HOME=/path/to/R/build 
+
+Export LD_LIBRARY_PATH=$R_HOME/lib 
+
+Add R to PATH (`which R` should return the new R binary)
+
+```
+
+2. Install rpy2
+
+```
+pip install rpy2
+
+```
+
+
+
