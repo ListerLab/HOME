@@ -232,3 +232,6 @@ cntrl+z
 ```
 *Note: always delete the directories created by HOME run if stopped in middle*
 
+#Citation
+
+If you use this software in your work, please cite.
