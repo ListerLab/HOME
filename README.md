@@ -45,7 +45,8 @@ chr1	15825	-	CHH	11	19
 ```
 **DMR detection for two group comparison:**
 
-```HOME-pairwise 	-t [CG/CHG/CHH/CHN/CNN]	 -a [path of sample1 (including filename)]	 -b [path of case (including filename)] 	-o [output path]
+```
+HOME-pairwise 	-t [CG/CHG/CHH/CHN/CNN]	 -a [path of sample1 (including filename)]	 -b [path of case (including filename)] 	-o [output path]
 ```
 
 *Note: In case of replicates for each sample separate them by space.*
