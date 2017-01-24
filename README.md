@@ -96,13 +96,14 @@ This parameters sets minimum length (in terms of base pairs) for a DMR to be rep
 The DMRs below this length will be skipped and not reported in the filtered DMR output file. The default is 50bp.
 
 **Parameter –ncb**
+
 This parameter controls when the smaller DMRs should be merged into one. It controls minimum number of C’s required between DMRs to keep them as separate DMRs.  It works in relation with parameter –md (described below). The default is 5 C’s. So, if the number of C’s are less than 5 and the distance is less than 500bp (default for --md) between two consecutive DMRs it will be merged into one single DMR.
 
-**Parameter –md **
+**Parameter –md**
 
 This parameter allows the user to set the merge distance between two consecutive DMRs. The defaults is 500bp. 
 
-**Parameter –npp **
+**Parameter –npp**
 
 This parameter allows the user to set the number of parallel process to run at a time. The default is 5. 
 
@@ -130,3 +131,49 @@ Here, status refers to state of DMR (hyper/hypo). Mean_meth1 and mean_meth2 refe
 
 The filtered output file is generated from the unfiltered file based on parameter mc, d and ml. 
 
+**DMR detection for more than two groups: time series
+
+```
+HOME-timeseries 	-t [CG/CHG/CHH/CHN/CNN]	-i [sample paths]		–nr [number of replicates for each sample]		-o [output path]
+```
+Example: 
+
+```
+HOME-timeseries 	-t CG 	-i /testcase/sample1_rep1.txt    /testcase/sample1_rep2.txt /testcase/sample2_rep1.txt   /testcase/sample2_rep2.txt    /testcase/sample3_rep1.txt /testcase/sample3_rep2.txt 	–nr  2 2 2 	–o /output
+```
+Required arguments:
+
+```
+-t--type	            type of DMRs (CG /CHH/CHG/CHN/CNN) 
+
+-i--samplepaths     	path of samples (separated by space) 
+
+-nr--numofrep	       number of replicates for each sample (separated by space)
+
+-o –-outputpath 		   path to the output directory  
+```
+
+Optional arguments: 
+
+```
+Parameter			        default				      description	
+-sc --scorecutoff 		  0.5			        the score from the classifier for each C position 
+-npp –numprocess 		   5	            number of cores to be used
+-ml --minlength  		   50	           minimum length of DMRs required to be reported 
+```
+
+**Output format**
+
+```
+chr	start	end	numC	len	max_delta	confidence_scores	comb1-n
+
+```
+Here, Max_delta is the maximum average methylation difference among the compared samples. 
+Confidence score takes into account the length, number of C’s and SVM score. The higher value denotes more confident DMR. 
+Comb1-n denotes the pairwise comparisons for each combination of samples. It reports start:end:state:delta for each pairwise comparison. 
+ 
+*NOTE : The order of combination will be same as the order of input while running HOME.*
+
+#Required tools
+
+[Link]python 2.7
