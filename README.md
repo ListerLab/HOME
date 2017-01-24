@@ -176,4 +176,4 @@ Comb1-n denotes the pairwise comparisons for each combination of samples. It rep
 
 #Required tools
 
-[python 2.7]
+[python 2.7](https://www.python.org/download/releases/2.7/)
