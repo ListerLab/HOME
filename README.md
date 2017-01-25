@@ -232,7 +232,7 @@ pip install rpy2
 
 ```
 
-Stop HOME execution in middle
+To stop HOME execution in middle:
 ```
 cntrl+z
 ```
