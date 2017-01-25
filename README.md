@@ -46,45 +46,45 @@ chr1	15825	-	CHH	11	19
 **DMR detection for two group comparison: Pairwise**
 
 ```
-HOME-pairwise 	-t [CG/CHG/CHH/CHN/CNN]	 -a [path of sample1 (including filename)]	 -b [path of case (including filename)] 	-o [output path]
+HOME-pairwise 	-t [CG/CHG/CHH/CHN/CNN]	 -a [sample1_fullpath]	 -b [sample2_fullpath] 	-o [output_directorypath]
 ```
 
 *Note: In case of replicates for each sample separate them by space.*
 
 Example: 
 ```
-HOME-pairwise 	-t CG 	-a /testcase/sample1_rep1.txt  /testcase/sample1_rep2.txt 	-b /testcase/sample2_rep1.txt  /testcase/sample2_rep2.txt 	-o /output 
+HOME-pairwise 	-t CG 	-a ./testcase/sample1_rep1.txt  ./testcase/sample1_rep2.txt 	-b ./testcase/sample2_rep1.txt  ./testcase/sample2_rep2.txt 	-o ./outputpath 
 ```
 Required arguments:
 ```
--t 	Type of DMRs (CG /CHH/CHG/CHN/CNN) 
+-t --type 	        Type of DMRs (CG /CHH/CHG/CHN/CNN) 
 
--a 	path of sample1 (replicates should be separated by space) 
+-a --pathsample1 	 path of sample1 (replicates should be separated by space) 
 
--b 	path of sample2 (replicates should be separated by space) 
+-b --pathsample2  	path of sample2 (replicates should be separated by space) 
 
--o 	path to the output directory  
+-o --outputpath 	  path to the output directory  
 ```
 
 Optional arguments: 
 ```
-Parameter			           default				description	
--sc --SVMscorecutoff 		  0.1 			the score from the classifier for each C position 
--p --pruncutoff           0.1 	    the SVM score checked for consecutive C’s from both ends to refine the boundaries.
--ml --minlength  		      50	      minimum length of DMRs required to be reported 
--ncb --numcb 			        5	        minimum number of C’s present between DMRs to keep them seperate
--md –mergedist 		        500	      maximum distance allowed between DMRs to merge 
--npp –numprocess 		      5       	number of cores to be used 
--mc—minc			            5 	      minimum number of C’s in a DMR
--d—delta			            0.1     	minimum average difference in methylation required in a DMR 
--prn--prunningC			    	3 	      number of consecutives C’s to be considered for pruning for boundary refinement
+Parameter			               default				description	
+-sc  --SVMscorecutoff 		    0.1 			  the score from the classifier for each C position 
+-p   --pruncutoff           0.1 	    the SVM score checked for consecutive C’s from both ends to refine the boundaries.
+-ml  --minlength  		        50	      minimum length of DMRs required to be reported 
+-ncb --numcb 			            5	       minimum number of C’s present between DMRs to keep them seperate
+-md  -–mergedist 		         500	     maximum distance allowed between DMRs to merge 
+-npp --numprocess 		        5       	number of cores to be used 
+-mc  --minc			              5 	      minimum number of C’s in a DMR
+-d   --delta			             0.1     	minimum average difference in methylation required in a DMR 
+-prn --prunningC			        	3 	      number of consecutives C’s to be considered for pruning for boundary refinement
 ```
 
 **Parameter –sc**
 
 HOME assigns a score from the classifier to each C position based on the histogram features. This score is then used to cluster the C’s and call the DMRs. The user can set a lower score cutoff if the DMRs seems to be missing or DMR boundaries seems to be missing the differential methylated cytosine near the boundaries. Similarly, the user can increase the cutoff if the boundaries of DMRs seems to be extended. The score ranges from 0-1 and the default is set to 0.1. 
 
-*NOTE: the default score is set after rigorous testing on various data sets and need not to be varied in most of the cases. The default should only be changed after proper visualization of the DMRs on the browser. *     
+*NOTE: the default score is set after rigorous testing on various data sets and need not to be varied in most of the cases. The default should only be changed after proper visualization of the DMRs on the browser.*     
 
 **Parameter –p**
 
@@ -134,32 +134,32 @@ The filtered output file is generated from the unfiltered file based on paramete
 **DMR detection for more than two groups: time series**
 
 ```
-HOME-timeseries 	-t [CG/CHG/CHH/CHN/CNN]	-i [sample paths]		–nr [number of replicates for each sample]		-o [output path]
+HOME-timeseries 	-t [CG/CHG/CHH/CHN/CNN]	-i [fullsamplepaths]		–nr [number of replicates for each sample]		-o [output_directorypath]
 ```
 Example: 
 
 ```
-HOME-timeseries 	-t CG 	-i /testcase/sample1_rep1.txt    /testcase/sample1_rep2.txt /testcase/sample2_rep1.txt   /testcase/sample2_rep2.txt    /testcase/sample3_rep1.txt /testcase/sample3_rep2.txt 	–nr  2 2 2 	–o /output
+HOME-timeseries 	-t CG 	-i ./testcase/sample1_rep1.txt    ./testcase/sample1_rep2.txt ./testcase/sample2_rep1.txt   ./testcase/sample2_rep2.txt    ./testcase/sample3_rep1.txt ./testcase/sample3_rep2.txt 	–nr  2 2 2 	–o /outputpath
 ```
 Required arguments:
 
 ```
--t--type	            type of DMRs (CG /CHH/CHG/CHN/CNN) 
+-t  --type	            type of DMRs (CG /CHH/CHG/CHN/CNN) 
 
--i--samplepaths     	path of samples (separated by space) 
+-i  --samplepaths     	path of samples (separated by space) 
 
--nr--numofrep	       number of replicates for each sample (separated by space)
+-nr --numofrep	        number of replicates for each sample (separated by space)
 
--o –-outputpath 		   path to the output directory  
+-o  –-outputpath 		    path to the output directory  
 ```
 
 Optional arguments: 
 
 ```
 Parameter			        default				      description	
--sc --scorecutoff 		  0.5			        the score from the classifier for each C position 
--npp –numprocess 		   5	            number of cores to be used
--ml --minlength  		   50	           minimum length of DMRs required to be reported 
+-sc  --scorecutoff 		  0.5			        the score from the classifier for each C position 
+-npp -–numprocess 		   5	            number of cores to be used
+-ml  --minlength  		   50	           minimum length of DMRs required to be reported 
 ```
 
 **Output format**
