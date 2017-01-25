@@ -174,11 +174,11 @@ Comb1-n denotes the pairwise comparisons for each combination of samples. It rep
  
 *NOTE : The order of combination will be same as the order of input while running HOME. So in the example above there will be 3 combinations and:*
 
-*comb1 is sample1vssample2*
+*comb1 is Sample 1 vs Sample 2*
 
-*comb2 is sample1vssample3*
+*comb2 is Sample 1 vs Sample 3*
 
-*comb3 is sample2vssample3*
+*comb3 is Sample 2 vs Sample 3*
 
 #Required tools
 
