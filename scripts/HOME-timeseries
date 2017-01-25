@@ -11,245 +11,255 @@ import pandas as pd
 import multiprocessing as mp
 from HOME import HOME_timeseries_functions as ho
 np.set_printoptions(threshold=np.inf,suppress=True,linewidth=np.inf,precision=3)
-parser = argparse.ArgumentParser(description='HOME -- HISTOGRAM Of METHYLATION',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser = argparse.ArgumentParser(description='HOME -- HISTOGRAM Of METHYLATION')
 
-parser.add_argument('-i','--pathsamples', help='path of sample methylomes', required=True, nargs='+')
+parser.add_argument('-i','--samplepaths', help='path of sample methylomes', required=True, nargs='+')
 parser.add_argument('-nr','--numofrep', help='number of replicates for each sample', required=True, nargs='+',type=int)
 parser.add_argument('-t','--type', help='type of class (CG or CHN)', required=True, type=str)
 parser.add_argument('-o','--outputpath', help='path where the DMRs will be saved', required=True)
-parser.add_argument('-np','--numprocess', help='number of process to be run at a time', required=False, type=int,default=10)
+parser.add_argument('-npp','--numprocess', help='number of process to be run at a time', required=False, type=int,default=10)
 parser.add_argument('-sc','--scorecutoff',  help='path of the second sample methylome',choices=np.arange(0,1,0.1), required=False, type=float,default=0.5)
 parser.add_argument('-ml','--minlength', help='minimum length of DMRs to reported', required=False, type=int,default=10)
 
 o=parser.parse_args()
 numrep=o.numofrep
-input_files=o.pathsamples
-cwd = os.getcwd()
-if not os.path.exists((o.outputpath+'/temp')):
-    os.makedirs(o.outputpath+'/temp')
-w=0
-k=-1
-for i in numrep:
-   w=w+1
-   for j in xrange(1,i+1):
-     k=k+1
-     if not os.path.exists((o.outputpath+'/temp'+'/sample'+str(w)+'_rep'+str(j))):
-        os.makedirs(o.outputpath+'/temp'+'/sample1_rep'+str(j))
+
+input_files=o.samplepaths
+try:
+    cwd = os.getcwd()
+    if not os.path.exists((o.outputpath+'/temp')):
+        os.makedirs(o.outputpath+'/temp')
+    w=0
+    k=-1
+    for i in numrep:
+       w=w+1
+       for j in xrange(1,i+1):
+         k=k+1
+         if not os.path.exists((o.outputpath+'/temp'+'/sample'+str(w)+'_rep'+str(j))):
+            os.makedirs((o.outputpath+'/temp'+'/sample'+str(w)+'_rep'+str(j)))
+        
+            os.chdir((o.outputpath+'/temp'+'/sample'+str(w)+'_rep'+str(j))) 
+            if input_files[k].endswith('.gz'):
+                com='zcat'+' '+input_files[k]+'''| awk '{print $0 >> $1".tsv"}' '''
+            else:
+                com='''awk '{print $0 >> $1".tsv"}' ''' + input_files[k]
+            subprocess.call(com, shell=True)
+            input_files[k] = os.getcwd()
+            os.chdir(cwd)
+    s=[ os.path.splitext(os.path.basename(x))[0] for x in glob.glob(input_files[0]+'/*.tsv')]
+    os.chdir(cwd)  
+          
+    if not os.path.exists((o.outputpath+'/HOME_Timeseries_DMRs')):
+        os.makedirs(o.outputpath+'/HOME_Timeseries_DMRs')
     
-        os.chdir(o.outputpath+'/temp'+'/sample1_rep'+str(j)) 
-        com='zcat'+' '+input_files[k]+'''| awk '{print $0 >> $1".tsv"}' '''
-        subprocess.call(com, shell=True)
-        input_files[k] = os.getcwd()
-        os.chdir(cwd)
-s=[ os.path.splitext(os.path.basename(x))[0] for x in glob.glob(input_files[0]+'/*.tsv')]
-os.chdir(cwd)        
-if not os.path.exists((o.outputpath+'/HOME_timescale_DMRs')):
-    os.makedirs(o.outputpath+'/HOME_timescale_DMRs')
-
-
-sc=o.scorecutoff
-np=o.numprocess
-minlen=o.minlength
-classes=o.type
-
-"handle any number of replicates as long as it is 2+ in all groups but cannot handle 1 replicate in 1 group and multiple in the other"
-if (min(numrep)==1 and max(numrep)>1):
-    sys.exit('error: cannot handle 1 replicate in 1 group and more than 1 in other')
-print"Preparing the DMRs from HOME....." 
-print "GOOD LUCK !"
-pd.options.mode.chained_assignment = None
-
-merge = functools.partial(pd.merge, how='inner', on=['chr','pos',"strand","type"])
+    
+    sc=o.scorecutoff
+    npp=o.numprocess
+    minlen=o.minlength
+    classes=o.type
+    
+    "handle any number of replicates as long as it is 2+ in all groups but cannot handle 1 replicate in 1 group and multiple in the other"
+    if (min(numrep)==1 and max(numrep)>1):
+        sys.exit('error: cannot handle 1 replicate in 1 group and more than 1 in other')
+    print"Preparing the DMRs from HOME....." 
+    print "GOOD LUCK !"
+    pd.options.mode.chained_assignment = None
+    
+    merge = functools.partial(pd.merge, how='inner', on=['chr','pos',"strand","type"])
+except:
+    pass 
 
 def main(c):
     
-    val=[]
-    w=0
-    k=-1
-    
-    for j in  numrep:
-        w=w+1
-        d_rep={}
-        for i in xrange(1,j+1):
-            k=k+1
-            c1=["chr", "pos", "strand", "type", "mc"+str(w)+"_rep"+str(i), "h"+str(w)+"_rep"+str(i)]
-            
-            
-            d_rep[i]=pd.read_table(input_files[k]+'/'+c+'.tsv',header=None,names=c1)
-            if classes=="CG":
-                d_rep[i]=d_rep[i].loc[d_rep[i]['type'].str[:2] == "CG"]
-            elif classes=="CHG":
-                
-                d_rep[i]=d_rep[i].loc[(d_rep[i]['type'].str[1:2]!="G") & (d_rep[i]['type'].str[2:3]=="G")]
-            elif classes=="CHH":
-                
-                d_rep[i]=d_rep[i].loc[(d_rep[i]['type'].str[1:2]!="G") & (d_rep[i]['type'].str[2:3]!="G")] 
-            elif classes=="CHN":
-                
-                d_rep[i]=d_rep[i].loc[(d_rep[i]['type'].str[1:2]!="G") ] 
-            else:
-                d_rep[i]=d_rep[i]
-            
-        val.append(functools.reduce(merge, d_rep.values())) 
-    df=functools.reduce(merge, val)
-    
-    if len(df)>5:
-        df1=ho.format_allc(df, classes) 
+        val=[]
+        w=0
+        k=-1
         
-        if len(df1)>5:
-            u=0
-            df4=[]
-           
-            
-            for k in itertools.combinations(val, 2):
-               
-               u=u+1
-               dfa=k[0]
-               
-               dfb=k[1]
-               ra=dfa.shape[1]-4
-               rb=dfb.shape[1]-4
-               p_mc=3
-               p_h=4
-               for i in range(1,((ra)/2)+1):
-                   
-                   dfa.rename(columns={dfa.columns[i+p_mc]:"mc1_rep"+str(i)}, inplace = True)
-                   dfa.rename(columns={dfa.columns[i+p_h]:"h1"+"_rep"+str(i)}, inplace = True)
-                   p_mc=p_mc+1
-                   p_h=p_h+1
-               p_mc=3
-               p_h=4    
-               for i in range(1,((rb)/2)+1):
-                   
-                   dfb.rename(columns={dfb.columns[i+p_mc]:"mc2"+"_rep"+str(i)}, inplace = True)
-                   dfb.rename(columns={dfb.columns[i+p_h]:"h2"+"_rep"+str(i)}, inplace = True)
-                   p_mc=p_mc+1
-                   p_h=p_h+1
-              
-               df = pd.merge(dfa, dfb, how='inner', on=['chr','pos',"strand","type"])
-               df=df.sort_values(['pos'])
-               
-               df1=ho.format_allc(df, classes)
-               
-               del(df) 
-               
-               if min(numrep)>1 and max(numrep)>1:
-                   df3=ho.pval_cal_withrep(df1)
-                   
-               else:
-                  df3=ho.pval_cal_withoutrep(df1)
+        for j in  numrep:
+            w=w+1
+            d_rep={}
+            for i in xrange(1,j+1):
+                k=k+1
+                c1=["chr", "pos", "strand", "type", "mc"+str(w)+"_rep"+str(i), "h"+str(w)+"_rep"+str(i)]
                 
-               if classes=="CG" or classes=="CHG" or classes=="CHH" or classes=="CHN":
-                      
-                   
-                    input_file_path=os.getcwd()+'/training_data/training_data_CG.txt'
+                
+                d_rep[i]=pd.read_table(input_files[k]+'/'+c+'.tsv',header=None,names=c1)
+               
+                if classes=="CG":
+                    d_rep[i]=d_rep[i].loc[d_rep[i]['type'].str[:2] == "CG"]
+                elif classes=="CHG":
                     
-                    model_path=os.getcwd()+'/saved_model/saved_model_CG.pickle'
-                    k_norm=ho.norm_slidingwin_predict_CG(df3,input_file_path,model_path)
-                     
+                    d_rep[i]=d_rep[i].loc[(d_rep[i]['type'].str[1:2]!="G") & (d_rep[i]['type'].str[2:3]=="G")]
+                elif classes=="CHH":
                     
-               else:
-                    input_file_path=os.getcwd()+'/training_data/training_data_nonCG.txt'
+                    d_rep[i]=d_rep[i].loc[(d_rep[i]['type'].str[1:2]!="G") & (d_rep[i]['type'].str[2:3]!="G")] 
+                elif classes=="CHN":
                     
-                    model_path=os.getcwd()+'/saved_model/saved_model_nonCG.pickle'
-                    k_norm=ho.norm_slidingwin_predict_nonCG(df3,input_file_path,model_path)
-                 
-               df4.append(k_norm)
+                    d_rep[i]=d_rep[i].loc[(d_rep[i]['type'].str[1:2]!="G") ] 
+                else:
+                    d_rep[i]=d_rep[i]
+                
+            val.append(functools.reduce(merge, d_rep.values())) 
+        df=functools.reduce(merge, val)
         
-           
+        if len(df)>5:
+            df1=ho.format_allc(df, classes) 
             
-            for i, df in enumerate(df4, start=1):
-                df.rename(columns={col:'{}_df{}'.format(col, i) for col in ('glm_predicted_values', 'delta','win_sign')}, 
-                      inplace=True)         
-            merge1 = functools.partial(pd.merge, how='inner', on=['pos'])
-            dfd=functools.reduce(merge1, df4) 
-            
-            filter_col = [col for col in list(dfd) if col.startswith(('glm'))]
-            sum_val=dfd[filter_col].sum(axis=1)
-            final_val=pd.concat([dfd.pos,sum_val], axis=1)
-            final_val.columns=['pos','glm_predicted_values']
-            
-            dmrs=ho.clustandtrim(final_val,sc,minlen)
-           
-            
-            if len(dmrs)!=0:
-                filter_col1= [col for col in list(dfd) if col.startswith(('win'))]
-                filter_col2= [col for col in list(dfd) if col.startswith(('delta'))]
-                scores=[]
-                sign_win1=[]
-                max_delta=[]
-                for i in xrange(len(dmrs)):
-                    start=dmrs.start[i]
-                    stop=dmrs.end[i]
-                    k=(max(dfd[filter_col][(dfd.pos>=start) & (dfd.pos<=stop)].sum()))/dmrs.number_of_Cs[i]
-                    max_delta.append(max( np.mean(abs(dfd[filter_col2][(dfd.pos>=start) & (dfd.pos<=stop)]))))
-                    kk=max(0.2,(np.log(dmrs.number_of_Cs[i])/np.log(dmrs.length[i])))
-                    
-                    scores.append((k*kk))
-                    val_sign=[]
-                    k=dfd[filter_col]
-                    k_val=pd.concat([dfd.pos,k], axis=1)
-                    u=k_val[(k_val.pos>=start) & (k_val.pos<=stop)]
-                    u=u.reset_index(drop=True)  
-                    stop_df=0
-                    start_df=0
-                    for j in xrange(1,len(filter_col)+1):
-                        win=False
-                        for g in xrange(len(u)):
-                            if u.iloc[g][j]>0.1:
-                                if win==False:
-                                    start_df=u.iloc[g][0]
-                                    win=True
-                            if win==True and u.iloc[g][j]<0.1:
-                                    stop_df=u.iloc[g-1][0]
-                                    break
-                            if win==True and g==(len(u)-1) and u.iloc[g][j]>0.1: 
-                                stop_df=u.iloc[g][0]
-                        if start_df!=0 and stop_df!=0:
-                            delta_df=np.mean(abs(dfd[filter_col2][(dfd.pos>=start_df) & (dfd.pos<=stop_df)]))        
-                            
-                            dmr_sign=np.median(dfd[filter_col1][(dfd.pos>=start_df) & (dfd.pos<=stop_df)],axis=0)
-                            
+            if len(df1)>5:
+                u=0
+                df4=[]
+               
                 
+                for k in itertools.combinations(val, 2):
+                   
+                   u=u+1
+                   dfa=k[0]
+                   
+                   dfb=k[1]
+                   ra=dfa.shape[1]-4
+                   rb=dfb.shape[1]-4
+                   p_mc=3
+                   p_h=4
+                   for i in range(1,((ra)/2)+1):
+                       
+                       dfa.rename(columns={dfa.columns[i+p_mc]:"mc1_rep"+str(i)}, inplace = True)
+                       dfa.rename(columns={dfa.columns[i+p_h]:"h1"+"_rep"+str(i)}, inplace = True)
+                       p_mc=p_mc+1
+                       p_h=p_h+1
+                   p_mc=3
+                   p_h=4    
+                   for i in range(1,((rb)/2)+1):
+                       
+                       dfb.rename(columns={dfb.columns[i+p_mc]:"mc2"+"_rep"+str(i)}, inplace = True)
+                       dfb.rename(columns={dfb.columns[i+p_h]:"h2"+"_rep"+str(i)}, inplace = True)
+                       p_mc=p_mc+1
+                       p_h=p_h+1
+                  
+                   df = pd.merge(dfa, dfb, how='inner', on=['chr','pos',"strand","type"])
+                   df=df.sort_values(['pos'])
+                   
+                   df1=ho.format_allc(df, classes)
+                   
+                   del(df) 
+                   
+                   if min(numrep)>1 and max(numrep)>1:
+                       df3=ho.pval_cal_withrep(df1)
+                       
+                   else:
+                      df3=ho.pval_cal_withoutrep(df1)
+                    
+                   if classes=="CG" or classes=="CHG" or classes=="CHH" or classes=="CHN":
+                          
+                       
+                        input_file_path=os.getcwd()+'/training_data/training_data_CG.txt'
                         
-                            if dmr_sign[j-1]==-1.0:
-                                   
-                                   status_win="{start_df}:{stop_df}:hypo:{delta_df}".format(start_df=int(start_df),stop_df=int(stop_df),delta_df=round(delta_df[j-1],3))
-                            elif dmr_sign[j-1]==1.0:
-                                   status_win="{start_df}:{stop_df}:hyper:{delta_df}".format(start_df=int(start_df),stop_df=int(stop_df),delta_df=round(delta_df[j-1],3))
-                            elif dmr_sign[j-1]==0.0:
-                                   status_win="{start_df}:{stop_df}:hemi:{delta_df}".format(start_df=int(start_df),stop_df=int(stop_df),delta_df=round(delta_df[j-1],3))
-                            else:  
-                                    
-                                    status_win="NA" 
-                        elif start_df==0 and stop_df==0: 
-                            status_win="NA"         
-                        val_sign.append(status_win)
-                    sign_win1.append(val_sign) 
+                        model_path=os.getcwd()+'/saved_model/saved_model_CG.pickle'
+                        k_norm=ho.norm_slidingwin_predict_CG(df3,input_file_path,model_path)
+                         
+                        
+                   else:
+                        input_file_path=os.getcwd()+'/training_data/training_data_nonCG.txt'
+                        
+                        model_path=os.getcwd()+'/saved_model/saved_model_nonCG.pickle'
+                        k_norm=ho.norm_slidingwin_predict_nonCG(df3,input_file_path,model_path)
+                     
+                   df4.append(k_norm)
+            
+               
                 
-                scores=pd.DataFrame(scores,columns=['confidence_scores'])
-                max_delta=pd.DataFrame(max_delta,columns=['max_delta'])
-                name_win=[]
+                for i, df in enumerate(df4, start=1):
+                    df.rename(columns={col:'{}_df{}'.format(col, i) for col in ('glm_predicted_values', 'delta','win_sign')}, 
+                          inplace=True)         
+                merge1 = functools.partial(pd.merge, how='inner', on=['pos'])
+                dfd=functools.reduce(merge1, df4) 
                 
-                for i in xrange(1,len(sign_win1[0])+1):
-                    name_win.append("comb"+str(i))
-                sign_win1=pd.DataFrame(sign_win1,columns=name_win)
-                dmr_final=pd.concat([df1.chr[0:len(dmrs)],dmrs,max_delta,scores,sign_win1],axis=1)
-                dmr_final['chr'] = dmr_final['chr'].astype(str)
+                filter_col = [col for col in list(dfd) if col.startswith(('glm'))]
+                sum_val=dfd[filter_col].sum(axis=1)
+                final_val=pd.concat([dfd.pos,sum_val], axis=1)
+                final_val.columns=['pos','glm_predicted_values']
                 
-                print "DMRs for chr{c} done".format(c=c)
-                return dmr_final
+                dmrs=ho.clustandtrim(final_val,sc,minlen)
+               
+                
+                if len(dmrs)!=0:
+                    filter_col1= [col for col in list(dfd) if col.startswith(('win'))]
+                    filter_col2= [col for col in list(dfd) if col.startswith(('delta'))]
+                    scores=[]
+                    sign_win1=[]
+                    max_delta=[]
+                    for i in xrange(len(dmrs)):
+                        start=dmrs.start[i]
+                        stop=dmrs.end[i]
+                        
+                        k=(max(dfd[filter_col][(dfd.pos>=start) & (dfd.pos<=stop)].sum()))/dmrs.numC[i]
+                        
+                       
+                        max_delta.append(max( np.mean(abs(dfd[filter_col2][(dfd.pos>=start) & (dfd.pos<=stop)]))))
+                        kk=max(0.2,(np.log(dmrs.numC[i])/np.log(dmrs.len[i])))
+                        
+                        scores.append((k*kk))
+                        val_sign=[]
+                        k=dfd[filter_col]
+                        k_val=pd.concat([dfd.pos,k], axis=1)
+                        u=k_val[(k_val.pos>=start) & (k_val.pos<=stop)]
+                        u=u.reset_index(drop=True)  
+                        stop_df=0
+                        start_df=0
+                        for j in xrange(1,len(filter_col)+1):
+                            win=False
+                            for g in xrange(len(u)):
+                                if u.iloc[g][j]>0.1:
+                                    if win==False:
+                                        start_df=u.iloc[g][0]
+                                        win=True
+                                if win==True and u.iloc[g][j]<0.1:
+                                        stop_df=u.iloc[g-1][0]
+                                        break
+                                if win==True and g==(len(u)-1) and u.iloc[g][j]>0.1: 
+                                    stop_df=u.iloc[g][0]
+                            if start_df!=0 and stop_df!=0:
+                                
+                                delta_df=np.mean(abs(dfd[filter_col2][(dfd.pos>=int(start_df)) & (dfd.pos<=int(stop_df))]))        
+                                
+                                dmr_sign=np.median(dfd[filter_col1][(dfd.pos>=int(start_df)) & (dfd.pos<=int(stop_df))],axis=0)
+                                
+                    
+                            
+                                if dmr_sign[j-1]==-1.0:
+                                       
+                                       status_win="{start_df}:{stop_df}:hypo:{delta_df}".format(start_df=int(start_df),stop_df=int(stop_df),delta_df=round(delta_df[j-1],3))
+                                elif dmr_sign[j-1]==1.0:
+                                       status_win="{start_df}:{stop_df}:hyper:{delta_df}".format(start_df=int(start_df),stop_df=int(stop_df),delta_df=round(delta_df[j-1],3))
+                                elif dmr_sign[j-1]==0.0:
+                                       status_win="{start_df}:{stop_df}:hemi:{delta_df}".format(start_df=int(start_df),stop_df=int(stop_df),delta_df=round(delta_df[j-1],3))
+                                else:  
+                                        
+                                        status_win="NA" 
+                            elif start_df==0 and stop_df==0: 
+                                status_win="NA"         
+                            val_sign.append(status_win)
+                        sign_win1.append(val_sign) 
+                    
+                    scores=pd.DataFrame(scores,columns=['confidence_scores'])
+                    max_delta=pd.DataFrame(max_delta,columns=['max_delta'])
+                    name_win=[]
+                    
+                    for i in xrange(1,len(sign_win1[0])+1):
+                        name_win.append("comb"+str(i))
+                    sign_win1=pd.DataFrame(sign_win1,columns=name_win)
+                    dmr_final=pd.concat([df1.chr[0:len(dmrs)],dmrs,max_delta,scores,sign_win1],axis=1)
+                    dmr_final['chr'] = dmr_final['chr'].astype(str)
+                    dmr_final.to_csv(o.outputpath+'/HOME_Timeseries_DMRs'+"/"+"Timeseries_HOME_DMR_{c}.txt".format(c=c),header=True, index=False,sep='\t')
+                    print "DMRs for chr{c} done".format(c=c)
+                    return 
                 
 if __name__ == "__main__":
-   
-      
-    pool = mp.Pool(processes=len(np))
+  
+    pool = mp.Pool(processes=npp)
     process = [pool.apply_async(main, args=(d,)) for d in s]
     pool.close()
     output = [p.get() for p in process]
     
-    df1=pd.concat(output, ignore_index=True,axis=0)
-    df1.to_csv(o.outputpath+'/HOME_timescale_DMRs'+"/HOME_timescale_DMRs.txt",header=True, index=False,sep='\t',float_format='%.5f')
     shutil.rmtree(o.outputpath+'/temp', ignore_errors=True)
     print "Congratulations the DMRs are ready for you"
 

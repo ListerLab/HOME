@@ -311,11 +311,11 @@ def clustandtrim(k,sc,minlen):
             stop=0
     dmr_start=pd.DataFrame(dmr_start,columns=['start'],dtype='int')
     dmr_stop=pd.DataFrame(dmr_stop,columns=['end'],dtype='int')
-    length=pd.DataFrame(dmr_stop.end-dmr_start.start,columns=['length'],dtype='int')
-    number_of_Cs=pd.DataFrame(no_c,columns=['number_of_Cs'],dtype='int')
+    length=pd.DataFrame(dmr_stop.end-dmr_start.start,columns=['len'],dtype='int')
+    number_of_Cs=pd.DataFrame(no_c,columns=['numC'],dtype='int')
     
     final_dmrs=pd.concat([dmr_start,dmr_stop,number_of_Cs,length],axis=1)
-    final_dmrs=final_dmrs[final_dmrs.length>minlen]
-    final_dmrs=final_dmrs[final_dmrs.number_of_Cs>4]
+    final_dmrs=final_dmrs[final_dmrs.len>minlen]
+    final_dmrs=final_dmrs[final_dmrs.numC>4]
     final_dmrs=final_dmrs.reset_index(drop=True)
     return (final_dmrs)    

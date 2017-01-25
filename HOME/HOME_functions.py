@@ -464,16 +464,16 @@ def clustandtrim(k,df1,sc,tr,dis_thres,ncb,prn):
     dmr_start=pd.DataFrame(dmr_start,columns=['start'],dtype='int')
     dmr_stop=pd.DataFrame(dmr_stop,columns=['end'],dtype='int')
     status_dmr=pd.DataFrame(status,columns=['status'],dtype='str')
-    number_of_Cs=pd.DataFrame(no_c,columns=['numCG'],dtype='int')
-    avg_number_of_Cs_sample1=pd.DataFrame(coverage_sample1,columns=['avg_coverage_of_Cs_sample1'],dtype='int')
-    avg_number_of_Cs_sample2=pd.DataFrame(coverage_sample2,columns=['avg_coverage_of_Cs_sample2'],dtype='int')
-    length=pd.DataFrame(dmr_stop.end-dmr_start.start,columns=['length'],dtype='int')
+    number_of_Cs=pd.DataFrame(no_c,columns=['numC'],dtype='int')
+    avg_number_of_Cs_sample1=pd.DataFrame(coverage_sample1,columns=['avg_coverage1'],dtype='int')
+    avg_number_of_Cs_sample2=pd.DataFrame(coverage_sample2,columns=['avg_coverage2'],dtype='int')
+    length=pd.DataFrame(dmr_stop.end-dmr_start.start,columns=['len'],dtype='int')
     final_dmrs=pd.concat([dmr_start,dmr_stop,status_dmr,number_of_Cs,mean_diff_case,mean_diff_cont,comb_diff,avg_number_of_Cs_sample1,avg_number_of_Cs_sample2,length],axis=1)
-    
+    final_dmrs=final_dmrs.loc[(final_dmrs.status != 'hemi')]
     final_dmrs=final_dmrs.reset_index(drop=True)
     return (final_dmrs)
     
 def filterdmr(dmrs,minlen,mc,d):
-    final_dmrs=dmrs.loc[(dmrs.numCG >= mc) & (abs(dmrs.delta)>= d) & (abs(dmrs.length)>= minlen)]
+    final_dmrs=dmrs.loc[(dmrs.numC >= mc) & (abs(dmrs.delta)>= d) & (abs(dmrs.len)>= minlen)]
     final_dmrs=final_dmrs.reset_index(drop=True)
     return (final_dmrs)
