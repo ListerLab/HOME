@@ -213,12 +213,13 @@ def norm_slidingwin_predict_CG(df_file,input_file_path,model_path):
     
     return (k)
 def norm_slidingwin_predict_nonCG(df_file,input_file_path,model_path):
-   
+    b=0.57559 
+    m=2.01748
     norm_value=[]
     input_file1=input_file_path
     
     df_file1 = pd.read_csv(input_file1,header=None,delimiter=',')
-
+    delta=[]
     x=[]
     status=[]
     clf = None
@@ -261,9 +262,13 @@ def norm_slidingwin_predict_nonCG(df_file,input_file_path,model_path):
             sum1=hist/k
             norm_value.append(sum1)
     X_test_scaler=scaler.transform(norm_value)
-    y_pred=pd.DataFrame(((clf.decision_function(X_test_scaler))), columns=['predicted_values'],dtype='float' )
+    y_pred=pd.DataFrame((clf.decision_function(X_test_scaler))) 
+    y_pred.columns=['predicted_values']
+    y_final= np.exp((b + m*y_pred)) / (1 + np.exp((b + m*y_pred))) 
+    y_final.columns=['glm_predicted_values']
     status=pd.DataFrame(status,columns=['win_sign'],dtype='float')
-    k=pd.concat([df_file.pos[:-1],y_pred,status], names=None,axis=1)
+    delta=pd.DataFrame(delta,columns=['delta'],dtype='float')
+    k=pd.concat([df_file.pos[:-1],y_final,delta,status], names=None,axis=1) 
     
     return (k)
     
