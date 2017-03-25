@@ -166,8 +166,11 @@ def main(c):
         model_path=os.getcwd()+'/saved_model/saved_model_nonCG.pickle'
         k=ho.norm_slidingwin_predict_nonCG(df3,input_file_path,model_path)
    
-    
-    dmrs=ho.clustandtrim(k,df3,sc,tr,dis_thres,ncb,prn)
+    if classes=="CG" :
+        len_cutoff=10
+    if classes=="CHG" or classes=="CHH" or classes=="CHN":
+        len_cutoff=2
+    dmrs=ho.clustandtrim(k,df3,sc,tr,dis_thres,ncb,prn,len_cutoff)
     del(k,df3)
     dmrs_filtered=ho.filterdmr(dmrs,minlen,mc,d)
     
