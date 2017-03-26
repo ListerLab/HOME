@@ -272,7 +272,7 @@ def norm_slidingwin_predict_nonCG(df_file,input_file_path,model_path):
     
     return (k)
     
-def clustandtrim(k,df1,sc,tr,dis_thres,ncb,prn):
+def clustandtrim(k,df1,sc,tr,dis_thres,ncb,prn,len_cutoff):
     score_thres=0.02
     dmr_start=[]
     dmr_stop=[]
@@ -429,7 +429,7 @@ def clustandtrim(k,df1,sc,tr,dis_thres,ncb,prn):
                 
                    cg_stop=pos[p]
                    
-                   if (cg_stop-cg_start)>=10:
+                   if (cg_stop-cg_start)>=len_cutoff:
                        p_start=df1[df1.pos==cg_start].index
                        p_stop=df1[df1.pos==cg_stop].index
                        dif=df1.meth_diff[p_start[0]:p_stop[0]]
