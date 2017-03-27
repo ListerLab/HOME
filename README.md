@@ -1,4 +1,4 @@
-#HOME  
+# HOME  
 HOME (histogram of methylation) is a python package for differential methylation region (DMR) identification. 
 The method uses histogram of methylation features and the linear Support Vector Machine (SVM) to identify DMRs
 from whole genome bisulfite sequencing (WGBS) data. HOME can identify both pairwise and time series DMRs with or without replicates.
@@ -28,7 +28,7 @@ cd ./HOME
 pip install -r requirements.txt
 python setup.py install
 ```
-#Usage
+# Usage
 HOME can be run in pairwise mode for two group comparisons and time series mode for more the two group comparisons. 
 
 **Input file format**
