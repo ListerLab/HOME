@@ -17,7 +17,7 @@ setup(
         'scikit-learn==0.16.1',
         'statsmodels==0.6.1',
     ],
-    author_email = 'akanksha.iitkgp.2012@gmail.com',
+    author_email = 'akanksha.srivastava@research.uwa.edu.au',
     
     scripts = ["scripts/HOME-pairwise","scripts/HOME-timeseries"],
     packages = ['HOME'],
