@@ -1,4 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Apr 26 19:05:38 2017
 
+@author: akanksha
+"""
+
+import time
 import argparse 
 import numpy as np
 import os
@@ -8,8 +15,20 @@ import sys
 import shutil
 import functools
 import pandas as pd
-import multiprocessing as mp
-from HOME import HOME_functions as ho
+import multiprocessing
+import multiprocessing.pool
+from HOME import HOME_functions_new as ho
+start_time1 = time.time()  
+class NoDaemonProcess(multiprocessing.Process):
+    # make 'daemon' attribute always return False
+    def _get_daemon(self):
+        return False
+    def _set_daemon(self, value):
+        pass
+    daemon = property(_get_daemon, _set_daemon)
+
+class MyPool(multiprocessing.pool.Pool):
+    Process = NoDaemonProcess
 
 np.set_printoptions(threshold=np.inf,suppress=True,linewidth=np.inf,precision=3)
 
@@ -25,11 +44,13 @@ parser.add_argument('-p','--pruncutoff', help='prunning cutoff for boundaries', 
 parser.add_argument('-ml','--minlength', help='minimum length of DMRs to reported', required=False, type=int,default=50)
 parser.add_argument('-ncb','--numcb',  help='number of Cs required between DMRs to keep them seperate', required=False, type=int,default=5)
 parser.add_argument('-md','--mergedist',  help='distance between DMRs to merge', required=False, type=int,default=500)
-#parser.add_argument('-ms','--mergescore',  help='minimum mean score required between DMRs to keep them seperate',choices=np.linspace(0,0.1,10,endpoint=False), required=False, type=float,default=0.02)
-parser.add_argument('-npp','--numprocess', help='number of process to be run at a time', required=False, type=int,default=5)
+parser.add_argument('-sin','--singlechrom',  help='parallel for single chromosomes',action='store_true',default=False)
+parser.add_argument('-npp','--numprocess', help='number of parallel processes for all chromosome', required=False, type=int,default=8)
+
 parser.add_argument('-mc','--minc', help='minimum number of C in a DMR to reported', required=False, type=int,default=5)
 parser.add_argument('-d','--delta', help='minimum average difference in methylation required', required=False, type=float,default=0.1)
 parser.add_argument('-prn','--prunningC', help='number of Cs required for prunning', required=False, type=int,default=3)
+#parser.add_argument('-nop','--numintproc', help='number of parallel processes for single chromosome', required=False, type=int,default=1)
 
 o=parser.parse_args()
 input_file1=o.pathsample1
@@ -70,6 +91,8 @@ try:
         os.makedirs(o.outputpath+'/HOME_DMRs')
     if not os.path.exists((o.outputpath+'/HOME_DMRs_filtered')):
         os.makedirs(o.outputpath+'/HOME_DMRs_filtered')
+#    if not os.path.exists((o.outputpath+'/intermediate_files')):
+#        os.makedirs(o.outputpath+'/intermediate_files')    
     sc=o.scorecutoff
     prn=o.prunningC
     tr=o.pruncutoff
@@ -80,7 +103,14 @@ try:
     ncb=o.numcb
     mc=o.minc
     d=o.delta
+    sin=o.singlechrom
     npp=o.numprocess
+    if sin==True:
+        
+        nop=npp
+        npp=1
+    if sin==False: 
+        nop=1
     fn=o.outputfilename
     "handle any number of replicates as long as it is 2+ in all groups but cannot handle 1 replicate in 1 group and multiple in the other"
     if (len(input_file1)==1 and len(input_file2)>1) or (len(input_file2)==1 and len(input_file1)>1):
@@ -96,7 +126,7 @@ except:
     pass    
 def main(c):
   
-    
+   
     val=[]
     d_rep={}
     for j in xrange(len(input_file1)):
@@ -147,31 +177,95 @@ def main(c):
     
     df1=ho.format_allc(df, classes)
     
-    
     del(df) 
     if len(input_file1)>1 and len(input_file2)>1:
-        df3=ho.pval_cal_withrep(df1)
+        CHUNKSIZE = int(len(df1)/nop)
+        CHUNKSIZE_list=[CHUNKSIZE]*nop 
+        extra=(len(df1)%nop)
+        
+        if extra> 0:
+            CHUNKSIZE_list[-1]=CHUNKSIZE_list[-1]+extra
+        df_chunk=ho.chunker1(df1,CHUNKSIZE_list)
+        
+        pool = multiprocessing.Pool(processes=nop)
+        process = [pool.apply_async(ho.pval_cal_withrep, args=(dd,)) for dd in df_chunk]
+        pool.close()
+        
+        pool.join()
+        output = [p.get() for p in process]
+       
+        df3=pd.concat(output, ignore_index=True,axis=0)
+        smooth_exp_val=ho.smoothing(*df3.exp_val) 
+        
+        df3['smooth_val']=(smooth_exp_val-min(smooth_exp_val))/(max(smooth_exp_val)-min(smooth_exp_val))
+        
     else:
-        df3=ho.pval_cal_withoutrep(df1)
-    
-    if classes=="CG" or classes=="CHG" or classes=="CHH" or classes=="CHN":
+       df3=ho.pval_cal_withoutrep(df1)
+  
+    if classes=="CG":
         input_file_path=os.getcwd()+'/training_data/training_data_CG.txt'
         
         model_path=os.getcwd()+'/saved_model/saved_model_CG.pickle'
         
         k=ho.norm_slidingwin_predict_CG(df3,input_file_path,model_path)
-    else:
+    elif classes=="CHG" or classes=="CHH" or classes=="CHN":
+#    
         input_file_path=os.getcwd()+'/training_data/training_data_nonCG.txt'
         
         model_path=os.getcwd()+'/saved_model/saved_model_nonCG.pickle'
-        k=ho.norm_slidingwin_predict_nonCG(df3,input_file_path,model_path)
+        CHUNKSIZE = int(len(df3)/nop)
+        df_chunk=ho.chunker(df3,CHUNKSIZE)
+        pool = multiprocessing.Pool(processes=nop)
+    
+        process = [pool.apply_async(ho.norm_slidingwin_predict_nonCG, args=(dd,input_file_path,model_path)) for dd in df_chunk]
+    
+        pool.close()
+        pool.join()
+        output = [p.get() for p in process]
+        k=pd.concat(output, ignore_index=True,axis=0)
+       
    
     if classes=="CG" :
         len_cutoff=10
+        tr=o.pruncutoff
+        dmrs=ho.clustandtrim_CG(k,df3,sc,tr,dis_thres,ncb,prn,len_cutoff)
     if classes=="CHG" or classes=="CHH" or classes=="CHN":
         len_cutoff=2
-    dmrs=ho.clustandtrim(k,df3,sc,tr,dis_thres,ncb,prn,len_cutoff)
-    del(k,df3)
+        
+        k["meth_case"]=df3.meth_case
+        k["meth_cont"]=df3.meth_cont
+        k["meth_diff"]=df3.meth_diff
+        k["h_cont"]=df3.h_cont
+        k["h_case"]=df3.h_case
+        del(df3)
+        CHUNKSIZE = int(len(k)/nop)
+        CHUNKSIZE_list=[CHUNKSIZE]*nop 
+        extra=(len(k)%nop)
+        
+        if extra> 0:
+            CHUNKSIZE_list[-1]=CHUNKSIZE_list[-1]+extra
+        df_chunk=ho.chunker1(k,CHUNKSIZE_list)
+    
+        pool = multiprocessing.Pool(processes=nop)
+        process = [pool.apply_async(ho.clustandtrim_nonCG1, args=(dd,sc)) for dd in df_chunk]
+        pool.close()
+        pool.join()
+        output = [p.get() for p in process]
+        
+        pre_dmr=pd.concat(output, ignore_index=True,axis=0)
+
+        df_split=ho.splitlist(k,pre_dmr,nop,dis_thres)
+        del(pre_dmr,k)
+       
+        pool = multiprocessing.Pool(processes=nop)
+        process = [pool.apply_async(ho.clustandtrim_nonCG2, args=(ddd,dd,dis_thres,ncb,len_cutoff)) for dd,ddd in df_split]
+        pool.close()
+        pool.join()
+        output = [p.get() for p in process]
+        
+        dmrs=pd.concat(output, ignore_index=True,axis=0)
+        
+
     dmrs_filtered=ho.filterdmr(dmrs,minlen,mc,d)
     
     if len(dmrs)> 1: 
@@ -179,21 +273,38 @@ def main(c):
         dmr_final['chr'] = dmr_final['chr'].astype(str)
         dmr_final.to_csv(o.outputpath+'/HOME_DMRs'+"/"+"HOME_DMR_{c}.txt".format(c=c),header=True, index=False,sep='\t')
         print "DMRs for {c} done".format(c=c)
+     
     if len(dmrs_filtered)> 1: 
         dmr_final=pd.concat([df1.chr[0:len(dmrs_filtered)],dmrs_filtered],axis=1)
         dmr_final['chr'] = dmr_final['chr'].astype(str)
         dmr_final.to_csv(o.outputpath+'/HOME_DMRs_filtered'+"/"+"HOME_DMR_{c}.txt".format(c=c),header=True, index=False,sep='\t')    
         return 
 if __name__ == "__main__":
-  try: 
-    pool = mp.Pool(processes=npp)
-    process = [pool.apply_async(main, args=(dx,)) for dx in s]
-    
-    pool.close()
-    output = [p.get() for p in process]
-    
+ if npp==1:  
+   try:   
+    for dx in s:
+       main(dx)
     shutil.rmtree(o.outputpath+'/temp_HOME', ignore_errors=True)
-    print "Congratulations the DMRs are ready for you"
-  except :
-      shutil.rmtree(o.outputpath+'/temp_HOME', ignore_errors=True)
-      print "error in the files"
+        
+    print "Congratulations the DMRs are ready"   
+   except :
+          shutil.rmtree(o.outputpath+'/temp_HOME', ignore_errors=True)
+          print "error in the files"   
+       
+ if npp>1:
+      try: 
+       
+        pool1= MyPool(processes=npp)
+        process1 = [pool1.apply_async(main, args=(dx,)) for dx in s]
+        
+        pool1.close()
+        pool1.join()
+        output1 = [p.get() for p in process1]
+        
+        shutil.rmtree(o.outputpath+'/temp_HOME', ignore_errors=True)
+        
+        print "Congratulations the DMRs are ready"
+        
+      except :
+          shutil.rmtree(o.outputpath+'/temp_HOME', ignore_errors=True)
+          print "error in the files"

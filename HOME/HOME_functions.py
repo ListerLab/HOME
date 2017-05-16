@@ -29,9 +29,9 @@ def format_allc(df,classes):
         df=df[(df[filter_col]> 2).all(axis=1)]
         df=df.reset_index(drop=True)
    elif classes=="CHN" or classes=="CHG" or classes=="CHH" or classes=="CNN":
-        filter_col = [col for col in list(df) if col.startswith(('h'))]
-        df=df[(df[filter_col]> 2).all(axis=1)]
-        df=df.reset_index(drop=True)
+#        filter_col = [col for col in list(df) if col.startswith(('h'))]
+#        df=df[(df[filter_col]> 2).all(axis=1)]
+#        df=df.reset_index(drop=True)
         filter_col = [col for col in list(df) if col.startswith(('chr','pos','mc','h'))]
         df=df[filter_col]
         df=df.reset_index(drop=True)        
@@ -86,9 +86,14 @@ def pval_cal_withrep(df):
         prop_names.append("meth_case"+str(i))
         DX.append(0)
     prop_table.columns=prop_names
-    pval=[]   
+    pvalue=[] 
+    prop_table=prop_table[(prop_table > 0).any(axis=1)] 
+    prop_table.index.names = ['old_index'] 
+    prop_table= prop_table.reset_index()
+    total_read=total_read.ix[list(prop_table.old_index)].reset_index(drop=True)
     for i in xrange(len(prop_table)):
-        props=list(prop_table.ix[i,])
+        
+        props=list(prop_table.ix[i,1:])
         wgt=list(total_read.ix[i,])
         wgt = [ -x for x in wgt]
             
@@ -102,12 +107,18 @@ def pval_cal_withrep(df):
         q=float(np.array(res[7],dtype=float))-float(np.array(res[3],dtype=float))
         d=int(np.array(res[8]))-int(np.array(res[6]))
         if int(np.array(glm_now[18]))==1:
-            pval.append(1-(float(np.array(ro.r.pchisq(q, df=d)))))
+            pvalue.append(1-(float(np.array(ro.r.pchisq(q, df=d)))))
         else:
-            pval.append(1-(1-(float(np.array(ro.r.pchisq(q, df=d))))))
-    pval=pd.DataFrame(pval)
-    pval.columns=["p_value"]
-    df=pd.concat([df,pval],axis=1)
+            pvalue.append(1-(1-(float(np.array(ro.r.pchisq(q, df=d))))))
+    pvalue=pd.DataFrame(pvalue)
+    pvalue=pd.concat([prop_table.old_index,pvalue],axis=1)
+    pvalue.set_index('old_index',inplace=True)
+    new_index=range(len(df))
+    pvalue=pvalue.reindex(new_index).fillna(0)
+    
+    pvalue.columns=["p_value"]
+    df=pd.concat([df,pvalue],axis=1)
+    del(pvalue,total_read)
     filter_col3 = [col for col in list(prop_table) if col.startswith(('meth_case'))]
     filter_col4 = [col for col in list(prop_table) if col.startswith(('meth_cont'))]
     
