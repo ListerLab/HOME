@@ -49,7 +49,7 @@ chr1	15825	-	CHH	11	19
 HOME-pairwise 	-t [CG/CHG/CHH/CHN/CNN]	 -a [sample1_fullpath]	 -b [sample2_fullpath] 	-o [output_directorypath]
 ```
 
-*Note: In case of replicates for each sample separate them by space.*
+*Note: In case of replicates for each sample separate them by space. Please check the number of cores to use and set them by npp parameter (default is 8). Also for non-CG DMR prediction for huge genomes like mammalian genome use parameter -sin.*
 
 Example: 
 ```
@@ -106,7 +106,7 @@ This parameter allows the user to set the merge distance between two consecutive
 
 **Parameter –npp**
 
-This parameter allows the user to set the number of parallel process to run at a time. The default is 5. 
+This parameter allows the user to set the number of parallel process to run at a time. The default is 8. 
 
 **Parameter –mc**
 
