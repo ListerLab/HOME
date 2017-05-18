@@ -74,10 +74,11 @@ Parameter			               default				description
 -ml  --minlength  		        50	      minimum length of DMRs required to be reported 
 -ncb --numcb 			            5	       minimum number of C’s present between DMRs to keep them seperate
 -md  -–mergedist 		         500	     maximum distance allowed between DMRs to merge 
--npp --numprocess 		        5       	number of cores to be used 
+-npp --numprocess 		        8       	number of cores to be used 
 -mc  --minc			              5 	      minimum number of C’s in a DMR
 -d   --delta			             0.1     	minimum average difference in methylation required in a DMR 
 -prn --prunningC			        	3 	      number of consecutives C’s to be considered for pruning for boundary refinement
+-sin --singlechrom          False    parallel the code for single chromosome
 ```
 
 **Parameter –sc**
@@ -118,6 +119,9 @@ This parameter sets minimum average methylation difference present for a DMR to 
 **Parameter –prn**
 
 This parameter is used in relation to parameter –p (described above). This controls the number of consecutive C’s to be considered from both ends for boundary refinement. The default is 3. Alteration of this parameter should only be done after proper visual inspection of the DMRs. 
+
+**Parameter –sin**
+This parameter is used if you want to parallel the code by single chromosome. The default is False, so the code will be parallel for all chromosomes. It should be used with huge chromosomes for example in case of non-CG DMR prediction for mammalian genome. If the genome size is small it is adviced not to use it.  
 
 **Output format**
 
