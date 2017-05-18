@@ -121,6 +121,7 @@ This parameter sets minimum average methylation difference present for a DMR to 
 This parameter is used in relation to parameter –p (described above). This controls the number of consecutive C’s to be considered from both ends for boundary refinement. The default is 3. Alteration of this parameter should only be done after proper visual inspection of the DMRs. 
 
 **Parameter –sin**
+
 This parameter is used if you want to parallel the code by single chromosome. The default is False, so the code will be parallel for all chromosomes. It should be used with huge chromosomes for example in case of non-CG DMR prediction for mammalian genome. If the genome size is small it is adviced not to use it.  
 
 **Output format**
