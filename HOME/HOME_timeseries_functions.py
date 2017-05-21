@@ -58,7 +58,7 @@ def pval_cal_withoutrep(df):
     return df1
     
 def process_frame_withR(file1):
-    com="Rscript HOME_R_time.R" + " "+file1
+    com="Rscript ./scripts/HOME_R_time.R" + " "+file1
     subprocess.call(com, shell=True)
     
 def pval_format_withrep(df_path):
