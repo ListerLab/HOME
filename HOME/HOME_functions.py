@@ -1,14 +1,18 @@
-import pandas as pd 
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Apr 26 19:06:05 2017
 
+@author: akanksha
+"""
+import subprocess
+import pandas as pd 
+from itertools import groupby
 import numpy as np
-import math
-from scipy import stats
+
 from sklearn import preprocessing
 from sklearn.externals import joblib
 import statsmodels.stats.proportion as sm
-from rpy2 import robjects as ro
-from rpy2.robjects import pandas2ri
-pandas2ri.activate()
+
 
 def format_allc(df,classes):
    if classes=="CG":
@@ -29,15 +33,16 @@ def format_allc(df,classes):
         df=df[(df[filter_col]> 2).all(axis=1)]
         df=df.reset_index(drop=True)
    elif classes=="CHN" or classes=="CHG" or classes=="CHH" or classes=="CNN":
-#        filter_col = [col for col in list(df) if col.startswith(('h'))]
-#        df=df[(df[filter_col]> 2).all(axis=1)]
-#        df=df.reset_index(drop=True)
+
         filter_col = [col for col in list(df) if col.startswith(('chr','pos','mc','h'))]
         df=df[filter_col]
         df=df.reset_index(drop=True)        
       
    return df
-
+def process_frame_withR(file1):
+    com="Rscript HOME_R.R" + " "+file1
+    subprocess.call(com, shell=True)
+    
 def pval_cal_withoutrep(df):
     df=df.rename(columns = {'mc_case_rep1':'mc_case','mc_cont_rep1':'mc_cont','h_case_rep1':'h_case','h_cont_rep1':'h_cont'})
     meth_case=df.mc_case.divide(df.h_case)
@@ -63,91 +68,65 @@ def pval_cal_withoutrep(df):
     
     df1=pd.concat([df, pd.DataFrame({"exp_val":scaled_exp_val}),pd.DataFrame({"smooth_val":scaled_smooth_exp_val})], axis=1)
     return df1
+def chunker1(seq, sizes):
+ idx=0
+ for s in sizes:
+
+    k=seq[idx:idx+s]
+    idx=idx+s
+ 
+    yield k
     
+def pval_format_withrep(df_path):
+    df=pd.read_table(df_path,header=0)
     
-def pval_cal_withrep(df):
     filter_col = [col for col in list(df) if col.startswith(('h'))]
     df=df[(df[filter_col]!=0).all(axis=1)]
-    
+#    
     filter_col1 = [col for col in list(df) if col.startswith(('mc'))]
     filter_col2 = [col for col in list(df) if col.startswith(('h'))]
     mc_read=df[filter_col1]
     total_read=df[filter_col2]
     mc_read.columns=list(total_read.columns.values)
     prop_table=mc_read/total_read
+    del(mc_read)
     filter_col1 = [col for col in list(df) if col.startswith(('mc_cont'))]
     filter_col2 = [col for col in list(df) if col.startswith(('mc_case'))]
     prop_names=[]
-    DX=[]
+   
     for i in xrange(1,len(filter_col1)+1):
         prop_names.append("meth_cont"+str(i))
-        DX.append(1)
+        
     for i in xrange(1,len(filter_col2)+1):
         prop_names.append("meth_case"+str(i))
-        DX.append(0)
-    prop_table.columns=prop_names
-    pvalue=[] 
-    prop_table=prop_table[(prop_table > 0).any(axis=1)] 
-    prop_table.index.names = ['old_index'] 
-    prop_table= prop_table.reset_index()
-    total_read=total_read.ix[list(prop_table.old_index)].reset_index(drop=True)
-    for i in xrange(len(prop_table)):
         
-        props=list(prop_table.ix[i,1:])
-        wgt=list(total_read.ix[i,])
-        wgt = [ -x for x in wgt]
-            
-        tmp_w2 = (1 / (1+np.exp(wgt)))
-        weights1= (tmp_w2 - .5) / .5
-        data2=pd.DataFrame({'DX':DX,'props':props,'weight':weights1})
-        data2.index=range(1,len(data2)+1)
-        formula = 'DX ~ props'
-        glm_now = ro.r.glm(formula=ro.r(formula), family=ro.r('binomial(link="logit")'), data=data2,weights = weights1)
-        res = ro.r.summary(glm_now)
-        q=float(np.array(res[7],dtype=float))-float(np.array(res[3],dtype=float))
-        d=int(np.array(res[8]))-int(np.array(res[6]))
-        if int(np.array(glm_now[18]))==1:
-            pvalue.append(1-(float(np.array(ro.r.pchisq(q, df=d)))))
-        else:
-            pvalue.append(1-(1-(float(np.array(ro.r.pchisq(q, df=d))))))
-    pvalue=pd.DataFrame(pvalue)
-    pvalue=pd.concat([prop_table.old_index,pvalue],axis=1)
-    pvalue.set_index('old_index',inplace=True)
-    new_index=range(len(df))
-    pvalue=pvalue.reindex(new_index).fillna(0)
-    
-    pvalue.columns=["p_value"]
-    df=pd.concat([df,pvalue],axis=1)
-    del(pvalue,total_read)
+    prop_table.columns=prop_names
     filter_col3 = [col for col in list(prop_table) if col.startswith(('meth_case'))]
     filter_col4 = [col for col in list(prop_table) if col.startswith(('meth_cont'))]
     
     meth_case_val=prop_table[filter_col3].sum(axis=1)
     meth_cont_val=prop_table[filter_col4].sum(axis=1)
-    meth_diff=(meth_case_val/len(filter_col3))-(meth_cont_val/len(filter_col4))
-    df['meth_diff']=meth_diff
     df['meth_case']=meth_case_val/len(filter_col3)
     df['meth_cont']=meth_cont_val/len(filter_col4)
-    filter_col3 = [col for col in list(df) if col.startswith(('h_case'))]
-    filter_col4 = [col for col in list(df) if col.startswith(('h_cont'))]
-    h_case_val=df[filter_col3].sum(axis=1)
-    h_cont_val=df[filter_col4].sum(axis=1)
-    df['h_case']=h_case_val/len(filter_col3)
-    df['h_cont']=h_cont_val/len(filter_col4)
+    meth_diff=df.meth_case-df.meth_cont
+    df['meth_diff']=meth_diff
+
+    filter_col1 = [col for col in list(df) if col.startswith(('h_case'))]
+    filter_col2= [col for col in list(df) if col.startswith(('h_cont'))]
+    h_case_val=df[filter_col1].sum(axis=1)
+    h_cont_val=df[filter_col2].sum(axis=1)
+    df['h_case']=h_case_val/len(filter_col1)
+    df['h_cont']=h_cont_val/len(filter_col2)
     df=df.fillna(0)
     h=df.meth_diff.abs()
     mod_pval=1-df.p_value
     df['val']=h.multiply(mod_pval)
     hh=mod_pval.apply(np.exp)
-    exp_val=h.multiply(hh)
-    scaled_exp_val=(exp_val-exp_val.min())/(exp_val.max()-exp_val.min())
+    df['exp_val']=h.multiply(hh)
+    df['scaled_exp_val']=(df.exp_val-df.exp_val.min())/(df.exp_val.max()-df.exp_val.min())
     
-    smooth_exp_val=smoothing(*exp_val) 
+    return df
     
-    scaled_smooth_exp_val=(smooth_exp_val-min(smooth_exp_val))/(max(smooth_exp_val)-min(smooth_exp_val))
-    
-    df1=pd.concat([df, pd.DataFrame({"exp_val":scaled_exp_val}),pd.DataFrame({"smooth_val":scaled_smooth_exp_val})], axis=1)
-    return df1
 def smoothing(*a):
     
     import numpy as np
@@ -165,7 +144,18 @@ def smoothing(*a):
         avg_value.append(np.divide(float(p+a[i]+n),3))
         
     return avg_value
+def chunker(seq, size):
+  
+   for pos in xrange(0, len(seq), size):
     
+    start_df=max(0,pos-25)
+    start=max(0,pos)
+    stop_df=min(len(seq),pos+size+25)
+    stop=min(len(seq),((pos+size)-1))
+    k=seq[start_df:stop_df]
+    
+  
+    yield (k,start,stop)    
 def norm_slidingwin_predict_CG(df_file,input_file_path,model_path):
     b=-0.05632
     m=1.89323
@@ -224,41 +214,37 @@ def norm_slidingwin_predict_CG(df_file,input_file_path,model_path):
     
     return (k)
 def norm_slidingwin_predict_nonCG(df_file,input_file_path,model_path):
+     
     b=0.57559 
     m=2.01748
     norm_value=[]
     input_file1=input_file_path
     
     df_file1 = pd.read_csv(input_file1,header=None,delimiter=',')
-    delta=[]
+    
     x=[]
     status=[]
     clf = None
- 
+     
     clf = joblib.load(model_path)
     x=np.array(df_file1)
-
+    
     scaler = preprocessing.StandardScaler().fit(x)
-    for i in xrange(len(df_file)-1):
-  
+    
+    for i in df_file[0].index:
+        if i>=df_file[1] and i<=df_file[2]: 
             pos_index=i
-            #print pos_index
-            if (pos_index-25)<0:
-                start=pos_index
-            else:
-                start=pos_index-25
-            if (pos_index+25)>=len(df_file):
-                stop=len(df_file)-1
-            else:
-                stop=pos_index+25
-            meth_diff=df_file.meth_diff[start:stop]
-            value=df_file.smooth_val[start:stop]
-            pos_specific=df_file.pos[start:stop]
+            start=max(0,pos_index-25)
+            stop=min(df_file[2],pos_index+25)
             
-            pos1=df_file.pos[i]
+            meth_diff=df_file[0].loc[start:stop].meth_diff
+            value=df_file[0].loc[start:stop].smooth_val
+            pos_specific=df_file[0].loc[start:stop].pos
+            
+            pos1=df_file[0].pos[i]
             mod_value=np.ceil(value*100)/100
             sign_win=np.sign(np.median(meth_diff))
-
+    
             status.append(sign_win)
             val=(abs(pos_specific-pos1)/10.0)
             wght=[]
@@ -272,18 +258,22 @@ def norm_slidingwin_predict_nonCG(df_file,input_file_path,model_path):
             k=float(sum(hist))
             sum1=hist/k
             norm_value.append(sum1)
+        if i>df_file[2]:  
+             break
+    #print norm_value
     X_test_scaler=scaler.transform(norm_value)
     y_pred=pd.DataFrame((clf.decision_function(X_test_scaler))) 
     y_pred.columns=['predicted_values']
     y_final= np.exp((b + m*y_pred)) / (1 + np.exp((b + m*y_pred))) 
     y_final.columns=['glm_predicted_values']
     status=pd.DataFrame(status,columns=['win_sign'],dtype='float')
-    delta=pd.DataFrame(delta,columns=['delta'],dtype='float')
-    k=pd.concat([df_file.pos[:-1],y_final,delta,status], names=None,axis=1) 
-    
+    df=df_file[0].pos.ix[df_file[1]:df_file[2]].reset_index(drop=True)
+    k=pd.concat([df,y_final,status], names=None,axis=1) 
+
     return (k)
+
     
-def clustandtrim(k,df1,sc,tr,dis_thres,ncb,prn,len_cutoff):
+def clustandtrim_CG(k,df1,sc,tr,dis_thres,ncb,prn,len_cutoff):
     score_thres=0.02
     dmr_start=[]
     dmr_stop=[]
@@ -488,8 +478,231 @@ def clustandtrim(k,df1,sc,tr,dis_thres,ncb,prn,len_cutoff):
     final_dmrs=final_dmrs.loc[(final_dmrs.status != 'hemi')]
     final_dmrs=final_dmrs.reset_index(drop=True)
     return (final_dmrs)
+
+def clustandtrim_nonCG1(k,sc):
+    k.reset_index(drop=True,inplace=True)
+    dmr_start=[]
+    dmr_stop=[]
+    win=False
+    wins=[]
+    num_c=[]
+ 
+    start=0
+    stop=0
+    for i in xrange(len(k)-1):
+        pos1=int(k.pos[i])
+        pos2=int(k.pos[i+1])
+        label=k.glm_predicted_values[i]
+        
+        if label>=sc and win==False and (pos2-pos1)<500:
+            start=k.pos[i]
+            
+            win=True
+        if win==True and (pos2-pos1)>500:
+            
+            stop=k.pos[i]
+            win=False
+        if label<sc and win==True :
+            stop=k.pos[i-1]
+
+                       
+            win=False  
+  
+        if start!=0 and stop!=0:    
+             dmr_start.append(int(start))   
+             dmr_stop.append(int(stop))
+             
+             p_start=k[k.pos==start].index
+             p_stop=k[k.pos==stop].index
+             total_meth_case=k.meth_case[p_start[0]:p_stop[0]+1]
+             avg_meth_case=total_meth_case.sum()/(len(total_meth_case))
+             total_meth_cont=k.meth_cont[p_start[0]:p_stop[0]+1]
+             avg_meth_cont=total_meth_cont.sum()/(len(total_meth_cont))
+             delta_diff=avg_meth_case-avg_meth_cont
+             num_c.append(len(total_meth_case))
+             wins.append(np.sign(delta_diff))
+             
+             start=0
+             stop=0                                           
+        
+    dmr_start=pd.DataFrame(dmr_start,columns=['dmr_start'],dtype='int')
+    dmr_stop=pd.DataFrame(dmr_stop,columns=['dmr_stop'],dtype='int')     
+    final_dmrs=pd.concat([dmr_start,dmr_stop],axis=1)
+    dmr_wins=pd.DataFrame(wins,columns=['win_sign'],dtype='int')
+    numb_c=pd.DataFrame(num_c,columns=['numc'],dtype='int') 
+    final_dmrs=pd.concat([dmr_start,dmr_stop,dmr_wins,numb_c],axis=1)
+    return (final_dmrs)
+    
+    
+def splitlist(k,df,npp,dis_thres):
+    h=df.dmr_start[1:]
+    h.reset_index(drop=True,inplace=True)
+    hh=df.dmr_stop[0:-1]
+    l=h-hh
+    l.loc[-1]=0
+    l.index = l.index + 1
+    l.sort_index(inplace=True)
+    df["dis"]=l
+    
+    chunks= int(len(df)/npp)
+    chunks_list=[chunks]*npp 
+    chunks_list=np.cumsum(chunks_list)
+    chunks_list=chunks_list-chunks_list[0]
+   
+    mod_chunks_list=[]
+    for i in chunks_list:
+        
+        c=0
+        if df.dis[i]>dis_thres or df.dis[i]==0 :
+            mod_chunks_list.append(i)
+        elif df.dis[i]<dis_thres:
+            
+            while (df.dis[(i+c)]<dis_thres) and (i+c<=len(df)-2):
+                
+                c=c+1
+                
+            mod_chunks_list.append(i+c)
+                 
+    if    mod_chunks_list[-1]!=len(df)-1:
+        mod_chunks_list.append(len(df)-1)
+    
+    mod_chunks_list=[ key for key,_ in groupby(mod_chunks_list)]
+    
+    for i in xrange(len(mod_chunks_list)-1):
+       
+       if i== len(mod_chunks_list)-2:
+        df_split=df.ix[mod_chunks_list[i]:mod_chunks_list[i+1]]
+       else:
+           df_split=df.ix[mod_chunks_list[i]:mod_chunks_list[i+1]-1]
+       df_split.reset_index(drop=True,inplace=True)
+       
+       k_split=k.ix[k.pos[k.pos==df_split.dmr_start[0]].index[0]:k.pos[k.pos==df_split.dmr_stop[len(df_split)-1]].index[0]]
+       k_split.reset_index(drop=True,inplace=True)
+       yield  df_split,k_split
+       
+def clustandtrim_nonCG2(k,final_dmrs,dis_thres,ncb,len_cutoff):
+    final_dmrs.reset_index(drop=True,inplace=True)
+ 
+    dmr_start=[]
+    dmr_stop=[]
+    
+    m=1
+    
+    for i in xrange(1,len(final_dmrs)):
+        
+       start=final_dmrs.dmr_stop[i-1]
+       stop=final_dmrs.dmr_start[i]
+       numc_prev=final_dmrs.numc[i-1]
+       numc_current=final_dmrs.numc[i]
+       len_prev=final_dmrs.dmr_stop[i-1]-final_dmrs.dmr_start[i-1]
+       len_current=final_dmrs.dmr_stop[i]-final_dmrs.dmr_start[i]
+       dmr_dis=stop-start
+    
+       
+       if dmr_dis>dis_thres:
+           new_dmr_start=final_dmrs.dmr_start[i-m]
+           new_dmr_stop=final_dmrs.dmr_stop[i-1]
+           m=1
+           dmr_start.append(int(new_dmr_start))
+           dmr_stop.append(int(new_dmr_stop))
+       elif final_dmrs.win_sign[i]!=final_dmrs.win_sign[i-1] and numc_current>5 and numc_prev>5:
+         if  len_prev>=(len_current/2) and len_current>=(len_prev/2):
+           new_dmr_start=final_dmrs.dmr_start[i-m]
+           new_dmr_stop=final_dmrs.dmr_stop[i-1]
+           m=1
+           
+           dmr_start.append(int(new_dmr_start))
+           dmr_stop.append(int(new_dmr_stop))    
+
+           
+       else:
+           
+            m=m+1
+    if m!=1:
+           new_dmr_start=final_dmrs.dmr_start[i-(m-1)]
+           new_dmr_stop=final_dmrs.dmr_stop[i]
+           dmr_start.append(int(new_dmr_start))
+           dmr_stop.append(int(new_dmr_stop))
+    if i==(len(final_dmrs)-1) and m==1:
+          
+           dmr_start.append(int(final_dmrs.dmr_start[-1:]))
+           dmr_stop.append(int(final_dmrs.dmr_stop[-1:]))        
+       
+         
+    dmr_start=pd.DataFrame(dmr_start,columns=['dmr_start'],dtype='int')
+    dmr_stop=pd.DataFrame(dmr_stop,columns=['dmr_stop'],dtype='int')     
+    final_dmrs=pd.concat([dmr_start,dmr_stop],axis=1)
+
+    dmr_start=[]
+    dmr_stop=[]
+    
+    no_c=[]
+    status=[]
+    comb_diff=[]
+    coverage_sample1=[]
+    coverage_sample2=[]
+    mean_diff_case=[]
+    mean_diff_cont=[]
+    
+    for i in xrange(len(final_dmrs)):
+        cg_start=final_dmrs.dmr_start[i]
+        cg_stop=final_dmrs.dmr_stop[i]
+        
+        if (cg_stop-cg_start)>=len_cutoff:
+                   
+                   p_start=k[k.pos==cg_start].index
+                   p_stop=k[k.pos==cg_stop].index
+                   dif=k.meth_diff[p_start[0]:p_stop[0]+1]
+                   
+                   coverage_cont=np.median(k.h_cont[p_start[0]:p_stop[0]+1])
+                   coverage_case=np.median(k.h_case[p_start[0]:p_stop[0]+1])
+                   total_meth_case=k.meth_case[p_start[0]:p_stop[0]+1]
+                   avg_meth_case=total_meth_case.sum()/(len(total_meth_case))
+                   total_meth_cont=k.meth_cont[p_start[0]:p_stop[0]+1]
+                   avg_meth_cont=total_meth_cont.sum()/(len(total_meth_cont))
+                   delta_diff=avg_meth_case-avg_meth_cont
+                   dif=dif.abs()
+                  
+                   win_sign=k.win_sign[p_start[0]:p_stop[0]+1]
+                   no_c.append(len(win_sign))
+
+                   if np.sign(delta_diff)==-1:
+                       status_win="hypo"
+                   if np.sign(delta_diff)==1:
+                       status_win="hyper"
+                   if np.sign(delta_diff)==0:
+                       status_win="hemi"    
+                   status.append(status_win)
+                   dmr_start.append(cg_start)
+                   dmr_stop.append(cg_stop)
+                   comb_diff.append(delta_diff) 
+                   mean_diff_case.append(avg_meth_case)
+                   mean_diff_cont.append(avg_meth_cont)
+                   coverage_sample1.append(coverage_cont)
+                   coverage_sample2.append(coverage_case)
+                   
+    mean_diff_case=pd.DataFrame(mean_diff_case,columns=['mean_Meth1'],dtype='float')
+    mean_diff_cont=pd.DataFrame(mean_diff_cont,columns=['mean_Meth2'],dtype='float')              
+    comb_diff=pd.DataFrame(comb_diff,columns=['delta'],dtype='float')
+    dmr_start=pd.DataFrame(dmr_start,columns=['start'],dtype='int')
+    dmr_stop=pd.DataFrame(dmr_stop,columns=['end'],dtype='int')
+    status_dmr=pd.DataFrame(status,columns=['status'],dtype='str')
+    number_of_Cs=pd.DataFrame(no_c,columns=['numC'],dtype='int')
+    avg_number_of_Cs_sample1=pd.DataFrame(coverage_sample1,columns=['avg_coverage1'],dtype='int')
+    avg_number_of_Cs_sample2=pd.DataFrame(coverage_sample2,columns=['avg_coverage2'],dtype='int')
+    length=pd.DataFrame(dmr_stop.end-dmr_start.start,columns=['len'],dtype='int')
+    final_dmrs=pd.concat([dmr_start,dmr_stop,status_dmr,number_of_Cs,mean_diff_case,mean_diff_cont,comb_diff,avg_number_of_Cs_sample1,avg_number_of_Cs_sample2,length],axis=1)
+    final_dmrs=final_dmrs.loc[(final_dmrs.status != 'hemi')]
+    final_dmrs=final_dmrs.reset_index(drop=True)
+    
+    return (final_dmrs)
     
 def filterdmr(dmrs,minlen,mc,d):
     final_dmrs=dmrs.loc[(dmrs.numC >= mc) & (abs(dmrs.delta)>= d) & (abs(dmrs.len)>= minlen)]
+    final_dmrs=final_dmrs.reset_index(drop=True)
+    return (final_dmrs)
+
+def filterdmr_nonCG(dmrs,minlen,mc):
+    final_dmrs=dmrs.loc[(dmrs.numC >= mc) & (abs(dmrs.len)>= minlen)]
     final_dmrs=final_dmrs.reset_index(drop=True)
     return (final_dmrs)

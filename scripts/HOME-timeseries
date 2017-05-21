@@ -139,11 +139,13 @@ def main(c):
                    df=df.sort_values(['pos'])
                    
                    df1=ho.format_allc(df, classes)
-                   
+                   df1.to_csv(o.outputpath+'/temp'+"/df1.txt",header=True, index=False,sep='\t')    
                    del(df) 
                    
                    if min(numrep)>1 and max(numrep)>1:
-                       df3=ho.pval_cal_withrep(df1)
+                       path_df1=o.outputpath+'/temp'+"/df1.txt"
+                       ho.process_frame_withR(path_df1)
+                       df3=ho.pval_format_withrep(path_df1)
                        
                    else:
                       df3=ho.pval_cal_withoutrep(df1)

@@ -1,13 +1,11 @@
 import pandas as pd 
 
 import numpy as np
-
+import subprocess
 from sklearn import preprocessing
 from sklearn.externals import joblib
 import statsmodels.stats.proportion as sm
-from rpy2 import robjects as ro
-from rpy2.robjects import pandas2ri
-pandas2ri.activate()
+
 def format_allc(df,classes):
    if classes=="CG":
         filter_col = [col for col in list(df) if col.startswith(('chr',"strand",'pos','mc','h'))]
@@ -59,65 +57,50 @@ def pval_cal_withoutrep(df):
     df1=pd.concat([df, pd.DataFrame({"exp_val":scaled_exp_val}),pd.DataFrame({"smooth_val":scaled_smooth_exp_val})], axis=1)
     return df1
     
+def process_frame_withR(file1):
+    com="Rscript HOME_R_time.R" + " "+file1
+    subprocess.call(com, shell=True)
     
-def pval_cal_withrep(df):
+def pval_format_withrep(df_path):
+    df=pd.read_table(df_path,header=0)
+    
     filter_col = [col for col in list(df) if col.startswith(('h'))]
     df=df[(df[filter_col]!=0).all(axis=1)]
-    
+#    
     filter_col1 = [col for col in list(df) if col.startswith(('mc'))]
     filter_col2 = [col for col in list(df) if col.startswith(('h'))]
     mc_read=df[filter_col1]
     total_read=df[filter_col2]
     mc_read.columns=list(total_read.columns.values)
     prop_table=mc_read/total_read
+    del(mc_read)
     filter_col1 = [col for col in list(df) if col.startswith(('h1'))]
     filter_col2 = [col for col in list(df) if col.startswith(('h2'))]
     prop_names=[]
-    DX=[]
+   
     for i in xrange(1,len(filter_col1)+1):
         prop_names.append("meth_cont"+str(i))
-        DX.append(1)
+        
     for i in xrange(1,len(filter_col2)+1):
         prop_names.append("meth_case"+str(i))
-        DX.append(0)
+        
     prop_table.columns=prop_names
-    pval=[]  
-    for i in xrange(len(prop_table)):
-        props=list(prop_table.ix[i,])
-        wgt=list(total_read.ix[i,])
-        wgt = [ -x for x in wgt]
-            
-        tmp_w2 = (1 / (1+np.exp(wgt)))
-        weights1= (tmp_w2 - .5) / .5
-        data2=pd.DataFrame({'DX':DX,'props':props,'weight':weights1})
-        data2.index=range(1,len(data2)+1)
-        formula = 'DX ~ props'
-        glm_now = ro.r.glm(formula=ro.r(formula), family=ro.r('binomial(link="logit")'), data=data2,weights = weights1)
-        res = ro.r.summary(glm_now)
-        q=float(np.array(res[7],dtype=float))-float(np.array(res[3],dtype=float))
-        d=int(np.array(res[8]))-int(np.array(res[6]))
-        if int(np.array(glm_now[18]))==1:
-            pval.append(1-(float(np.array(ro.r.pchisq(q, df=d)))))
-        else:
-            pval.append(1-(1-(float(np.array(ro.r.pchisq(q, df=d))))))
-    pval=pd.DataFrame(pval)
-    pval.columns=["p_value"]
-    df=pd.concat([df,pval],axis=1)
     filter_col3 = [col for col in list(prop_table) if col.startswith(('meth_case'))]
     filter_col4 = [col for col in list(prop_table) if col.startswith(('meth_cont'))]
     
     meth_case_val=prop_table[filter_col3].sum(axis=1)
     meth_cont_val=prop_table[filter_col4].sum(axis=1)
-    meth_diff=(meth_case_val/len(filter_col3))-(meth_cont_val/len(filter_col4))
-    df['meth_diff']=meth_diff
     df['meth_case']=meth_case_val/len(filter_col3)
     df['meth_cont']=meth_cont_val/len(filter_col4)
-    filter_col3 = [col for col in list(df) if col.startswith(('h_case'))]
-    filter_col4 = [col for col in list(df) if col.startswith(('h_cont'))]
-    h_case_val=df[filter_col3].sum(axis=1)
-    h_cont_val=df[filter_col4].sum(axis=1)
-    df['h_case']=h_case_val/len(filter_col3)
-    df['h_cont']=h_cont_val/len(filter_col4)
+    meth_diff=df.meth_case-df.meth_cont
+    df['meth_diff']=meth_diff
+
+    filter_col1 = [col for col in list(df) if col.startswith(('h_case'))]
+    filter_col2= [col for col in list(df) if col.startswith(('h_cont'))]
+    h_case_val=df[filter_col1].sum(axis=1)
+    h_cont_val=df[filter_col2].sum(axis=1)
+    df['h_case']=h_case_val/len(filter_col1)
+    df['h_cont']=h_cont_val/len(filter_col2)
     df=df.fillna(0)
     h=df.meth_diff.abs()
     mod_pval=1-df.p_value
@@ -132,6 +115,7 @@ def pval_cal_withrep(df):
     
     df1=pd.concat([df, pd.DataFrame({"exp_val":scaled_exp_val}),pd.DataFrame({"smooth_val":scaled_smooth_exp_val})], axis=1)
     return df1
+
 def smoothing(*a):
     
     import numpy as np

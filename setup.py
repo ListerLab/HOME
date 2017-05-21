@@ -6,14 +6,13 @@ from setuptools import setup
 
 setup(
     name = 'HOME',
-    version = '0.2',
+    version = '0.3',
     description="HOME: Histogram Of MEthylation",
     author = 'akanksha srivastava',
     install_requires = [
         'numpy==1.10.1',
         'pandas==0.17.1',
         'scipy==0.16.0',
-        'rpy2==2.7.7',
         'scikit-learn==0.16.1',
         'statsmodels==0.6.1',
     ],
