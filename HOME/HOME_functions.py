@@ -40,7 +40,7 @@ def format_allc(df,classes):
       
    return df
 def process_frame_withR(file1):
-    com="Rscript HOME_R.R" + " "+file1
+    com="Rscript ./scripts/HOME_R.R" + " "+file1
     subprocess.call(com, shell=True)
     
 def pval_cal_withoutrep(df):
