@@ -17,10 +17,10 @@ import functools
 import pandas as pd
 import multiprocessing
 import multiprocessing.pool
-from HOME import HOME_functions_new as ho
+from HOME import HOME_functions as ho
 start_time1 = time.time()  
 class NoDaemonProcess(multiprocessing.Process):
-    # make 'daemon' attribute always return False
+    
     def _get_daemon(self):
         return False
     def _set_daemon(self, value):
@@ -50,7 +50,6 @@ parser.add_argument('-npp','--numprocess', help='number of parallel processes fo
 parser.add_argument('-mc','--minc', help='minimum number of C in a DMR to reported', required=False, type=int,default=5)
 parser.add_argument('-d','--delta', help='minimum average difference in methylation required', required=False, type=float,default=0.1)
 parser.add_argument('-prn','--prunningC', help='number of Cs required for prunning', required=False, type=int,default=3)
-#parser.add_argument('-nop','--numintproc', help='number of parallel processes for single chromosome', required=False, type=int,default=1)
 
 o=parser.parse_args()
 input_file1=o.pathsample1
@@ -87,18 +86,19 @@ try:
     
     s=[ os.path.splitext(os.path.basename(x))[0] for x in glob.glob(input_file1[0]+'/*.tsv')]
     os.chdir(cwd)
+    if not os.path.exists((o.outputpath+'/temp_HOME'+'/chunks')):
+        os.makedirs(o.outputpath+'/temp_HOME'+'/chunks')
     if not os.path.exists((o.outputpath+'/HOME_DMRs')):
-        os.makedirs(o.outputpath+'/HOME_DMRs')
+        os.makedirs(o.outputpath+'/HOME_DMRs')    
     if not os.path.exists((o.outputpath+'/HOME_DMRs_filtered')):
         os.makedirs(o.outputpath+'/HOME_DMRs_filtered')
-#    if not os.path.exists((o.outputpath+'/intermediate_files')):
-#        os.makedirs(o.outputpath+'/intermediate_files')    
+   
     sc=o.scorecutoff
     prn=o.prunningC
     tr=o.pruncutoff
     minlen=o.minlength
     classes=o.type
-    #score_thres=o.mergescore
+    
     dis_thres=o.mergedist
     ncb=o.numcb
     mc=o.minc
@@ -186,22 +186,34 @@ def main(c):
         if extra> 0:
             CHUNKSIZE_list[-1]=CHUNKSIZE_list[-1]+extra
         df_chunk=ho.chunker1(df1,CHUNKSIZE_list)
+        ttc=0
+        df_path=[]
+        for i in df_chunk:
+            ttc=ttc+1
+            i.to_csv(o.outputpath+'/temp_HOME'+'/chunks'+"/{ttc}.txt".format(ttc=ttc),header=True, index=False,sep='\t')    
+            df_path.append(o.outputpath+'/temp_HOME'+'/chunks'+"/{ttc}.txt".format(ttc=ttc))
+        pool = multiprocessing.Pool(processes=nop)
+        process = [pool.apply_async(ho.process_frame_withR, args=(dd,)) for dd in df_path]
+        pool.close()
+        
+        pool.join()
         
         pool = multiprocessing.Pool(processes=nop)
-        process = [pool.apply_async(ho.pval_cal_withrep, args=(dd,)) for dd in df_chunk]
+        process = [pool.apply_async(ho.pval_format_withrep, args=(dd,)) for dd in df_path]
         pool.close()
         
         pool.join()
         output = [p.get() for p in process]
        
         df3=pd.concat(output, ignore_index=True,axis=0)
+            
         smooth_exp_val=ho.smoothing(*df3.exp_val) 
         
         df3['smooth_val']=(smooth_exp_val-min(smooth_exp_val))/(max(smooth_exp_val)-min(smooth_exp_val))
         
     else:
        df3=ho.pval_cal_withoutrep(df1)
-  
+   
     if classes=="CG":
         input_file_path=os.getcwd()+'/training_data/training_data_CG.txt'
         
@@ -209,7 +221,7 @@ def main(c):
         
         k=ho.norm_slidingwin_predict_CG(df3,input_file_path,model_path)
     elif classes=="CHG" or classes=="CHH" or classes=="CHN":
-#    
+   
         input_file_path=os.getcwd()+'/training_data/training_data_nonCG.txt'
         
         model_path=os.getcwd()+'/saved_model/saved_model_nonCG.pickle'
@@ -223,8 +235,8 @@ def main(c):
         pool.join()
         output = [p.get() for p in process]
         k=pd.concat(output, ignore_index=True,axis=0)
-       
-   
+        
+    
     if classes=="CG" :
         len_cutoff=10
         tr=o.pruncutoff
@@ -253,7 +265,7 @@ def main(c):
         output = [p.get() for p in process]
         
         pre_dmr=pd.concat(output, ignore_index=True,axis=0)
-
+        
         df_split=ho.splitlist(k,pre_dmr,nop,dis_thres)
         del(pre_dmr,k)
        
@@ -264,10 +276,12 @@ def main(c):
         output = [p.get() for p in process]
         
         dmrs=pd.concat(output, ignore_index=True,axis=0)
-        
-
-    dmrs_filtered=ho.filterdmr(dmrs,minlen,mc,d)
-    
+       
+    if classes=="CHG" or classes=="CHH" or classes=="CHN":
+        dmrs_filtered=ho.filterdmr_nonCG(dmrs,minlen,mc) 
+    if classes=="CG" :
+        dmrs_filtered=ho.filterdmr(dmrs,minlen,mc,d)
+   
     if len(dmrs)> 1: 
         dmr_final=pd.concat([df1.chr[0:len(dmrs)],dmrs],axis=1)
         dmr_final['chr'] = dmr_final['chr'].astype(str)
@@ -299,8 +313,7 @@ if __name__ == "__main__":
         
         pool1.close()
         pool1.join()
-        output1 = [p.get() for p in process1]
-        
+       
         shutil.rmtree(o.outputpath+'/temp_HOME', ignore_errors=True)
         
         print "Congratulations the DMRs are ready"
