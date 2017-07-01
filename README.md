@@ -32,7 +32,7 @@ python setup.py install
 ```
 git clone https://github.com/Akanksha2511/HOME.git
 cd ./HOME
-conda env create    *assuming the conda environment is activated*
+conda env create    *assuming the conda environment is activated and R is already installed in it*
 source activate HOMEenv
 python setup.py install
 ```
