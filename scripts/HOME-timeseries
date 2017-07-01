@@ -139,11 +139,12 @@ def main(c):
                    df=df.sort_values(['pos'])
                    
                    df1=ho.format_allc(df, classes)
-                   df1.to_csv(o.outputpath+'/temp'+"/df1.txt",header=True, index=False,sep='\t')    
+                   df1.to_csv(o.outputpath+'/temp'+"/df_{c}.txt".format(c=c),header=True, index=False,sep='\t')    
                    del(df) 
                    
                    if min(numrep)>1 and max(numrep)>1:
-                       path_df1=o.outputpath+'/temp'+"/df1.txt"
+                       path_df1=o.outputpath+'/temp'+"/df_{c}.txt".format(c=c)
+                      
                        ho.process_frame_withR(path_df1)
                        df3=ho.pval_format_withrep(path_df1)
                        
@@ -253,6 +254,7 @@ def main(c):
                     dmr_final['chr'] = dmr_final['chr'].astype(str)
                     dmr_final.to_csv(o.outputpath+'/HOME_Timeseries_DMRs'+"/"+"Timeseries_HOME_DMR_{c}.txt".format(c=c),header=True, index=False,sep='\t')
                     print "DMRs for chr{c} done".format(c=c)
+                    os.remove(o.outputpath+'/temp'+"/df_{c}.txt".format(c=c))
                     return 
                 
 if __name__ == "__main__":
