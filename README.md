@@ -61,7 +61,7 @@ HOME-pairwise 	-t [CG/CHG/CHH/CHN/CNN]	 -a [sample1_fullpath]	 -b [sample2_fullp
 
 Example: 
 ```
-HOME-pairwise 	-t CG 	-a ./testcase/sample1_rep1.txt  ./testcase/sample1_rep2.txt 	-b ./testcase/sample2_rep1.txt  ./testcase/sample2_rep2.txt 	-o ./outputpath 
+HOME-pairwise 	-t CG 	-a ./testcase/CG/sample1_rep1.txt  ./testcase/CG/sample1_rep2.txt 	-b ./testcase/CG/sample2_rep1.txt  ./testcase/CG/sample2_rep2.txt 	-o ./outputpath 
 ```
 Required arguments:
 ```
@@ -152,7 +152,7 @@ HOME-timeseries 	-t [CG/CHG/CHH/CHN/CNN]	-i [fullsamplepaths]		–nr [number of 
 Example: 
 
 ```
-HOME-timeseries 	-t CG 	-i ./testcase/sample1_rep1.txt    ./testcase/sample1_rep2.txt ./testcase/sample2_rep1.txt   ./testcase/sample2_rep2.txt    ./testcase/sample3_rep1.txt ./testcase/sample3_rep2.txt 	–nr  2 2 2 	–o /outputpath
+HOME-timeseries 	-t CG 	-i ./testcase/CG/sample1_rep1.txt    ./testcase/CG/sample1_rep2.txt ./testcase/CG/sample2_rep1.txt   ./testcase/CG/sample2_rep2.txt    ./testcase/CG/sample3_rep1.txt ./testcase/CG/sample3_rep2.txt 	–nr  2 2 2 	–o /outputpath
 ```
 Required arguments:
 
