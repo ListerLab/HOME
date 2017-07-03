@@ -28,7 +28,7 @@ cd ./HOME
 pip install -r requirements.txt
 python setup.py install
 ```
-** for conda users**
+**for conda users**
 ```
 git clone https://github.com/Akanksha2511/HOME.git
 cd ./HOME
