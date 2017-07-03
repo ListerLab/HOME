@@ -5,7 +5,7 @@ from whole genome bisulfite sequencing (WGBS) data. HOME can identify both pairw
 #Installation
 HOME is written for python 2.7 and tested on Linux system. It is recommended to set up virtual environment for python 2.7 first before installing HOME package.
 
-**Step 1:** Create a virtual environment for HOME
+**Step 1:** Create a virtual environment for HOME*
 
 ```
 virtualenv -p <path_to_python2.7> <env_name>
@@ -28,7 +28,7 @@ cd ./HOME
 pip install -r requirements.txt
 python setup.py install
 ```
-**for conda users**
+***For conda users**
 ```
 git clone https://github.com/Akanksha2511/HOME.git
 cd ./HOME
