@@ -106,16 +106,31 @@ def pval_format_withrep(df_path):
     mod_pval=1-df.p_value
     df['val']=h.multiply(mod_pval)
     hh=mod_pval.apply(np.exp)
-    exp_val=h.multiply(hh)
-    scaled_exp_val=(exp_val-exp_val.min())/(exp_val.max()-exp_val.min())
+    df['exp_val']=h.multiply(hh)
+    df['scaled_exp_val']=(df.exp_val-df.exp_val.min())/(df.exp_val.max()-df.exp_val.min())
     
-    smooth_exp_val=smoothing(*exp_val) 
-    
-    scaled_smooth_exp_val=(smooth_exp_val-min(smooth_exp_val))/(max(smooth_exp_val)-min(smooth_exp_val))
-    
-    df1=pd.concat([df, pd.DataFrame({"exp_val":scaled_exp_val}),pd.DataFrame({"smooth_val":scaled_smooth_exp_val})], axis=1)
-    return df1
+    return df
 
+def chunker1(seq, sizes):
+ idx=0
+ for s in sizes:
+
+    k=seq[idx:idx+s]
+    idx=idx+s
+ 
+    yield k
+def chunker(seq, size):
+  
+   for pos in xrange(0, len(seq), size):
+    
+    start_df=max(0,pos-25)
+    start=max(0,pos)
+    stop_df=min(len(seq),pos+size+25)
+    stop=min(len(seq),((pos+size)-1))
+    k=seq[start_df:stop_df]
+    
+  
+    yield (k,start,stop)        
 def smoothing(*a):
     
     import numpy as np
@@ -149,6 +164,7 @@ def norm_slidingwin_predict_CG(df_file,input_file_path,model_path):
     x=np.array(df_file1)
 
     scaler = preprocessing.StandardScaler().fit(x)
+    
     for i in xrange(len(df_file)-1):
   
             pos_index=i
@@ -184,17 +200,20 @@ def norm_slidingwin_predict_CG(df_file,input_file_path,model_path):
             sum1=hist/k
             norm_value.append(sum1)
     X_test_scaler=scaler.transform(norm_value)
+    
     y_pred=pd.DataFrame((clf.decision_function(X_test_scaler))) 
     y_pred.columns=['predicted_values']
+    
     y_final= np.exp((b + m*y_pred)) / (1 + np.exp((b + m*y_pred))) 
     y_final.columns=['glm_predicted_values']
     status=pd.DataFrame(status,columns=['win_sign'],dtype='float')
     delta=pd.DataFrame(delta,columns=['delta'],dtype='float')
     k=pd.concat([df_file.pos[:-1],y_final,delta,status], names=None,axis=1)       
-    
+   
     
     return (k)  
 def norm_slidingwin_predict_nonCG(df_file,input_file_path,model_path):
+     
     b=0.57559 
     m=2.01748
     norm_value=[]
@@ -205,31 +224,27 @@ def norm_slidingwin_predict_nonCG(df_file,input_file_path,model_path):
     x=[]
     status=[]
     clf = None
- 
+     
     clf = joblib.load(model_path)
     x=np.array(df_file1)
-
+    
     scaler = preprocessing.StandardScaler().fit(x)
-    for i in xrange(len(df_file)-1):
-  
+    
+    for i in df_file[0].index:
+        if i>=df_file[1] and i<=df_file[2]: 
             pos_index=i
-            #print pos_index
-            if (pos_index-25)<0:
-                start=pos_index
-            else:
-                start=pos_index-25
-            if (pos_index+25)>=len(df_file):
-                stop=len(df_file)-1
-            else:
-                stop=pos_index+25
-            meth_diff=df_file.meth_diff[start:stop]
-            value=df_file.smooth_val[start:stop]
-            pos_specific=df_file.pos[start:stop]
+            start=max(0,pos_index-25)
+            stop=min(df_file[2],pos_index+25)
             
-            pos1=df_file.pos[i]
+            meth_diff=df_file[0].loc[start:stop].meth_diff
+            value=df_file[0].loc[start:stop].smooth_val
+            pos_specific=df_file[0].loc[start:stop].pos
+            mc_diff=df_file[0].meth_diff[i]
+            delta.append(mc_diff)
+            pos1=df_file[0].pos[i]
             mod_value=np.ceil(value*100)/100
             sign_win=np.sign(np.median(meth_diff))
-
+    
             status.append(sign_win)
             val=(abs(pos_specific-pos1)/10.0)
             wght=[]
@@ -243,6 +258,9 @@ def norm_slidingwin_predict_nonCG(df_file,input_file_path,model_path):
             k=float(sum(hist))
             sum1=hist/k
             norm_value.append(sum1)
+        if i>df_file[2]:  
+             break
+    #print norm_value
     X_test_scaler=scaler.transform(norm_value)
     y_pred=pd.DataFrame((clf.decision_function(X_test_scaler))) 
     y_pred.columns=['predicted_values']
@@ -250,10 +268,10 @@ def norm_slidingwin_predict_nonCG(df_file,input_file_path,model_path):
     y_final.columns=['glm_predicted_values']
     status=pd.DataFrame(status,columns=['win_sign'],dtype='float')
     delta=pd.DataFrame(delta,columns=['delta'],dtype='float')
-    k=pd.concat([df_file.pos[:-1],y_final,delta,status], names=None,axis=1)       
-    
-    
-    return (k)     
+    df=df_file[0].pos.ix[df_file[1]:df_file[2]].reset_index(drop=True)
+    k=pd.concat([df,y_final,delta,status], names=None,axis=1)  
+
+    return (k)
 def clustandtrim(k,sc,minlen):
     dmr_start=[]
     dmr_stop=[]
