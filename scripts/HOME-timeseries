@@ -8,8 +8,19 @@ import shutil
 import  itertools
 import functools
 import pandas as pd
-import multiprocessing as mp
+import multiprocessing
+import multiprocessing.pool
 from HOME import HOME_timeseries_functions as ho
+class NoDaemonProcess(multiprocessing.Process):
+    
+    def _get_daemon(self):
+        return False
+    def _set_daemon(self, value):
+        pass
+    daemon = property(_get_daemon, _set_daemon)
+
+class MyPool(multiprocessing.pool.Pool):
+    Process = NoDaemonProcess
 np.set_printoptions(threshold=np.inf,suppress=True,linewidth=np.inf,precision=3)
 parser = argparse.ArgumentParser(description='HOME -- HISTOGRAM Of METHYLATION')
 
@@ -20,7 +31,7 @@ parser.add_argument('-o','--outputpath', help='path where the DMRs will be saved
 parser.add_argument('-npp','--numprocess', help='number of process to be run at a time', required=False, type=int,default=10)
 parser.add_argument('-sc','--scorecutoff',  help='path of the second sample methylome',choices=np.arange(0,1,0.1), required=False, type=float,default=0.5)
 parser.add_argument('-ml','--minlength', help='minimum length of DMRs to reported', required=False, type=int,default=10)
-
+parser.add_argument('-sin','--singlechrom',  help='parallel for single chromosomes',action='store_true',default=False)
 o=parser.parse_args()
 numrep=o.numofrep
 
@@ -52,9 +63,15 @@ try:
     if not os.path.exists((o.outputpath+'/HOME_Timeseries_DMRs')):
         os.makedirs(o.outputpath+'/HOME_Timeseries_DMRs')
     
-    
+    sin=o.singlechrom
     sc=o.scorecutoff
     npp=o.numprocess
+    if sin==True:
+        
+        nop=npp
+        npp=1
+    if sin==False: 
+        nop=1
     minlen=o.minlength
     classes=o.type
     
@@ -139,33 +156,73 @@ def main(c):
                    df=df.sort_values(['pos'])
                    
                    df1=ho.format_allc(df, classes)
-                   df1.to_csv(o.outputpath+'/temp'+"/df_{c}.txt".format(c=c),header=True, index=False,sep='\t')    
-                   del(df) 
-                   
+                   del(df)
                    if min(numrep)>1 and max(numrep)>1:
-                       path_df1=o.outputpath+'/temp'+"/df_{c}.txt".format(c=c)
-                      
-                       ho.process_frame_withR(path_df1)
-                       df3=ho.pval_format_withrep(path_df1)
+                       CHUNKSIZE = int(len(df1)/nop)
+                       CHUNKSIZE_list=[CHUNKSIZE]*nop 
+                       extra=(len(df1)%nop)
+            
+                       if extra> 0:
+                         CHUNKSIZE_list[-1]=CHUNKSIZE_list[-1]+extra
+                       df_chunk=ho.chunker1(df1,CHUNKSIZE_list)
+                       ttc=0
+                       df_path=[]
+                       for ii in df_chunk:
+                            ttc=ttc+1
+                            ii.to_csv(o.outputpath+'/temp'+"/df_{c}_{ttc}.txt".format(c=c,ttc=ttc),header=True, index=False,sep='\t')    
+                            df_path.append(o.outputpath+'/temp'+"/df_{c}_{ttc}.txt".format(c=c,ttc=ttc))
+                       
+                   
+                       pool = multiprocessing.Pool(processes=nop)
+                       process = [pool.apply_async(ho.process_frame_withR, args=(dd,)) for dd in df_path]
+                       
+                       pool.close()
+        
+                       pool.join()
+        
+                       pool = multiprocessing.Pool(processes=nop)
+                       process = [pool.apply_async(ho.pval_format_withrep, args=(dd,)) for dd in df_path]
+                       pool.close()
+        
+                       pool.join()
+                       output = [p.get() for p in process]
+       
+                       df3=pd.concat(output, ignore_index=True,axis=0)
+                       
+                       smooth_exp_val=ho.smoothing(*df3.exp_val) 
+        
+                       df3['smooth_val']=(smooth_exp_val-min(smooth_exp_val))/(max(smooth_exp_val)-min(smooth_exp_val))
                        
                    else:
                       df3=ho.pval_cal_withoutrep(df1)
+                   #print len(df3)
                     
-                   if classes=="CG" or classes=="CHG" or classes=="CHH" or classes=="CHN":
-                          
+                   if classes=="CG":
+                        
                        
                         input_file_path=os.getcwd()+'/training_data/training_data_CG.txt'
                         
                         model_path=os.getcwd()+'/saved_model/saved_model_CG.pickle'
-                        k_norm=ho.norm_slidingwin_predict_CG(df3,input_file_path,model_path)
-                         
                         
-                   else:
+                        k_norm=ho.norm_slidingwin_predict_CG(df3,input_file_path,model_path)
+                        
+                       
+                   elif classes=="CHG" or classes=="CHH" or classes=="CHN":
                         input_file_path=os.getcwd()+'/training_data/training_data_nonCG.txt'
                         
                         model_path=os.getcwd()+'/saved_model/saved_model_nonCG.pickle'
-                        k_norm=ho.norm_slidingwin_predict_nonCG(df3,input_file_path,model_path)
-                     
+                        #k_norm=ho.norm_slidingwin_predict_nonCG(df3,input_file_path,model_path)
+                        CHUNKSIZE = int(len(df3)/nop)
+                        df_chunk=ho.chunker(df3,CHUNKSIZE)
+                        pool = multiprocessing.Pool(processes=nop)
+                        
+                        process = [pool.apply_async(ho.norm_slidingwin_predict_nonCG, args=(dd,input_file_path,model_path)) for dd in df_chunk]
+    
+                        pool.close()
+                        pool.join()
+                        output = [p.get() for p in process]
+                        k_norm=pd.concat(output, ignore_index=True,axis=0)
+                       
                    df4.append(k_norm)
             
                
@@ -182,7 +239,7 @@ def main(c):
                 final_val.columns=['pos','glm_predicted_values']
                 
                 dmrs=ho.clustandtrim(final_val,sc,minlen)
-               
+                
                 
                 if len(dmrs)!=0:
                     filter_col1= [col for col in list(dfd) if col.startswith(('win'))]
@@ -253,18 +310,38 @@ def main(c):
                     dmr_final=pd.concat([df1.chr[0:len(dmrs)],dmrs,max_delta,scores,sign_win1],axis=1)
                     dmr_final['chr'] = dmr_final['chr'].astype(str)
                     dmr_final.to_csv(o.outputpath+'/HOME_Timeseries_DMRs'+"/"+"Timeseries_HOME_DMR_{c}.txt".format(c=c),header=True, index=False,sep='\t')
-                    print "DMRs for chr{c} done".format(c=c)
-                    os.remove(o.outputpath+'/temp'+"/df_{c}.txt".format(c=c))
+                    print "DMRs for {c} done".format(c=c)
+                    for filename in glob.glob(o.outputpath+'/temp'+"/df_{c}_*.txt".format(c=c)) :
+                        os.remove(filename)
                     return 
                 
 if __name__ == "__main__":
   
-    pool = mp.Pool(processes=npp)
-    process = [pool.apply_async(main, args=(d,)) for d in s]
-    pool.close()
-    output = [p.get() for p in process]
-    
+ if npp==1:  
+   try:   
+    for dx in s:
+       main(dx)
     shutil.rmtree(o.outputpath+'/temp', ignore_errors=True)
-    print "Congratulations the DMRs are ready for you"
-
+        
+    print "Congratulations the DMRs are ready"   
+   except :
+          shutil.rmtree(o.outputpath+'/temp', ignore_errors=True)
+          print "error in the files"   
+       
+ if npp>1:
+      try: 
+       
+        pool1= MyPool(processes=npp)
+        process1 = [pool1.apply_async(main, args=(dx,)) for dx in s]
+        
+        pool1.close()
+        pool1.join()
+       
+        shutil.rmtree(o.outputpath+'/temp', ignore_errors=True)
+        
+        print "Congratulations the DMRs are ready"
+        
+      except :
+          shutil.rmtree(o.outputpath+'/temp', ignore_errors=True)
+          print "error in the files"
 
