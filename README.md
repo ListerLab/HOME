@@ -87,7 +87,8 @@ Parameter                 default    description
    -d   --delta			        0.1     	  minimum average difference in methylation required in a DMR 
    -prn --prunningC			    3 	        number of consecutives C’s to be considered for pruning for boundary refinement
    -sin --singlechrom     False      parallel the code for single chromosome
-   -ns --numsamples       all      number of samples to use for pairwise DMR calling; default takes all sample in the sample file          -sp --startposition    1st position     start position of sample in the sample file to use for pairwise DMR calling 
+   -ns --numsamples       all      number of samples to use for pairwise DMR calling; default takes all sample in the sample file
+   -sp --startposition    1st position     start position of sample in the sample file to use for pairwise DMR calling 
    -BSSeeker2 --BSSeeker2 False  input CGmap file from BS-Seeker2
 ```
 
