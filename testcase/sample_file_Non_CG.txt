@@ -1,0 +1,3 @@
+sample1	./testcase/Non_CG/sample1_r1.txt	./testcase/Non_CG/sample1_r2.txt
+sample2	./testcase/Non_CG/sample2_r1.txt	./testcase/Non_CG/sample2_r2.txt
+sample3	./testcase/Non_CG/sample3_r1.txt	./testcase/Non_CG/sample3_r2.txt

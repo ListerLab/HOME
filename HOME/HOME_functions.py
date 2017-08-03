@@ -696,13 +696,71 @@ def clustandtrim_nonCG2(k,final_dmrs,dis_thres,ncb,len_cutoff):
     final_dmrs=final_dmrs.reset_index(drop=True)
     
     return (final_dmrs)
+def norm_slidingwin_predict_nonCG_withoutchunk(df_file,input_file_path,model_path):
+     
+    b=0.57559 
+    m=2.01748
+    norm_value=[]
+    input_file1=input_file_path
+    
+    df_file1 = pd.read_csv(input_file1,header=None,delimiter=',')
+
+    x=[]
+    status=[]
+    clf = None
+ 
+    clf = joblib.load(model_path)
+    x=np.array(df_file1)
+
+    scaler = preprocessing.StandardScaler().fit(x)
+    for i in xrange(len(df_file)-1):
+  
+            pos_index=i
+            
+            if (pos_index-25)<0:
+                start=pos_index
+            else:
+                start=pos_index-25
+            if (pos_index+25)>=len(df_file):
+                stop=len(df_file)-1
+            else:
+                stop=pos_index+25
+            meth_diff=df_file.meth_diff[start:stop]
+            value=df_file.smooth_val[start:stop]
+            pos_specific=df_file.pos[start:stop]
+            
+            pos1=df_file.pos[i]
+            mod_value=np.ceil(value*100)/100
+            sign_win=np.sign(np.median(meth_diff))
+
+            status.append(sign_win)
+            val=(abs(pos_specific-pos1)/10.0)
+            wght=[]
+            for i in val:
+                t=min(i,1)
+                wght.append(1-t)
+            
+            
+            bins=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
+            hist,edges = np.histogram(mod_value, bins=bins,weights=wght)
+            k=float(sum(hist))
+            sum1=hist/k
+            norm_value.append(sum1)
+    X_test_scaler=scaler.transform(norm_value)
+    y_pred=pd.DataFrame(((clf.decision_function(X_test_scaler))), columns=['predicted_values'],dtype='float' )
+    y_final= np.exp((b + m*y_pred)) / (1 + np.exp((b + m*y_pred))) 
+    y_final.columns=['glm_predicted_values']
+    status=pd.DataFrame(status,columns=['win_sign'],dtype='float')
+    k=pd.concat([df_file.pos[:-1],y_final,status], names=None,axis=1)
+    
+    return (k)
     
 def filterdmr(dmrs,minlen,mc,d):
     final_dmrs=dmrs.loc[(dmrs.numC >= mc) & (abs(dmrs.delta)>= d) & (abs(dmrs.len)>= minlen)]
     final_dmrs=final_dmrs.reset_index(drop=True)
     return (final_dmrs)
 
-def filterdmr_nonCG(dmrs,minlen,mc):
+def filterdmr_nonCG(dmrs,minlen,mc,d):
     final_dmrs=dmrs.loc[(dmrs.numC >= mc) & (abs(dmrs.len)>= minlen)]
     final_dmrs=final_dmrs.reset_index(drop=True)
     return (final_dmrs)
