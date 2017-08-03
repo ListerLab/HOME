@@ -37,9 +37,11 @@ source activate HOMEenv
 python setup.py install
 ```
 # Usage
-HOME can be run in pairwise mode for two group comparisons and time series mode for more the two group comparisons. 
+HOME can be run in pairwise mode for two group comparisons and time series mode for more than two group comparisons. It can also be used for mutiple pairwise comparisions with large numper of input samples. 
 
-**Input file format**
+**BSSeeker2 CGmap file can be provided as input**
+**or**
+**Input file format as mentioned below**
 
 Chromosome number, position, strand, type (CG/CHG/CHH) where H is anything but G, methylated reads and total number of reads. For a sample, this information are saved in a single tab separated text file without header, which can be compressed or uncompressed. Below shows an example of such file:
 
@@ -54,39 +56,39 @@ chr1	15825	-	CHH	11	19
 **DMR detection for two group comparison: Pairwise**
 
 ```
-HOME-pairwise 	-t [CG/CHG/CHH/CHN/CNN]	 -a [sample1_fullpath]	 -b [sample2_fullpath] 	-o [output_directorypath]
+HOME-pairwise 	-t [CG/CHG/CHH/CHN/CNN]	 -i [sample_file_fullpath] 	-o [output_directorypath]
 ```
 
 *Note: In case of replicates for each sample separate them by space. Please check the number of cores to use and set them by npp parameter (default is 8). Also for non-CG DMR prediction for huge genomes like mammalian genome use parameter -sin.*
 
 Example: 
 ```
-HOME-pairwise 	-t CG 	-a ./testcase/CG/sample1_rep1.txt  ./testcase/CG/sample1_rep2.txt 	-b ./testcase/CG/sample2_rep1.txt  ./testcase/CG/sample2_rep2.txt 	-o ./outputpath 
+HOME-pairwise 	-t CG 	-i ./testcase/sample_file_CG.tsv 	-o ./outputpath 
 ```
 Required arguments:
 ```
--t --type 	        Type of DMRs (CG /CHH/CHG/CHN/CNN) 
+ -t --type 	        Type of DMRs (CG /CHH/CHG/CHN/CNN) 
 
--a --pathsample1 	 path of sample1 (replicates should be separated by space) 
-
--b --pathsample2  	path of sample2 (replicates should be separated by space) 
-
--o --outputpath 	  path to the output directory  
+ -i --samplefilepath Sample file containing sample names and sample path; the file should be tab seperated  
+ 
+ -o --outputpath 	  Path to the output directory  
 ```
 
 Optional arguments: 
 ```
-Parameter			               default				description	
--sc  --SVMscorecutoff 		    0.1 			  the score from the classifier for each C position 
--p   --pruncutoff           0.1 	    the SVM score checked for consecutive C’s from both ends to refine the boundaries.
--ml  --minlength  		        50	      minimum length of DMRs required to be reported 
--ncb --numcb 			            5	       minimum number of C’s present between DMRs to keep them seperate
--md  -–mergedist 		         500	     maximum distance allowed between DMRs to merge 
--npp --numprocess 		        8       	number of cores to be used 
--mc  --minc			              5 	      minimum number of C’s in a DMR
--d   --delta			             0.1     	minimum average difference in methylation required in a DMR 
--prn --prunningC			        	3 	      number of consecutives C’s to be considered for pruning for boundary refinement
--sin --singlechrom          False    parallel the code for single chromosome
+Parameter                 default    description	
+   -sc  --SVMscorecutoff  0.1        the score from the classifier for each C position 
+   -p   --pruncutoff      0.1        the SVM score checked for consecutive C’s from both ends to refine the boundaries.
+   -ml  --minlength       50         minimum length of DMRs required to be reported 
+   -ncb --numcb           5          minimum number of C’s present between DMRs to keep them seperate
+   -md  -–mergedist 		    500	       maximum distance allowed between DMRs to merge 
+   -npp --numprocess 		   8       	  number of cores to be used 
+   -mc  --minc			         3 	        minimum number of C’s in a DMR
+   -d   --delta			        0.1     	  minimum average difference in methylation required in a DMR 
+   -prn --prunningC			    3 	        number of consecutives C’s to be considered for pruning for boundary refinement
+   -sin --singlechrom     False      parallel the code for single chromosome
+   -ns --numsamples       all      number of samples to use for pairwise DMR calling; default takes all sample in the sample file          -sp --startposition    1st position     start position of sample in the sample file to use for pairwise DMR calling 
+   -BSSeeker2 --BSSeeker2 False  input CGmap file from BS-Seeker2
 ```
 
 **Parameter –sc**
@@ -132,36 +134,45 @@ This parameter is used in relation to parameter –p (described above). This con
 
 This parameter is used if you want to parallel the code by single chromosome. The default is False, so the code will be parallel for all chromosomes. It should be used with huge chromosomes for example in case of non-CG DMR prediction for mammalian genome. If the genome size is small it is adviced not to use it.  
 
+**Parameter –ns**
+
+This parameter is used if you want to use selected number of samples from your sample input file. The default is False, so the code will be use all the samples in the sample input file. It allows you to have as many samples as you want in your input file but control the number of samples to use for DMR calling. 
+
+**Parameter –sp**
+
+This parameter is used if you want to select the samples from anywhere in your sample input file. This parameter is used along with ** ns** parameter. The default is False, so the code will start from the 1st sample in the sample input file. It allows you to have as many samples as you want in your input file but control the samples to use for DMR calling. 
+
+**Parameter –BSSeeker2**
+
+This parameter is used if you want to provide CGmap file directly. The default is False, so the code will require the files in the input format mentioned above. If the user have methyaltion output files from BSSeeker2, it can be provided directly. 
+
 **Output format**
 
-HOME-pairwise output two files filtered and unfiltered files. The output format is:
+The output format is:
 
 ```
 chr	start	end	status	numC	mean_meth1	mean_meth2	delta	Avg_coverage1	Avg_coverage2	len
 ```
 
-Here, status refers to state of DMR (hyper/hypo). Mean_meth1 and mean_meth2 refers to mean methylation level for sample1 and 2 respectively.   Delta refers to the difference in mean methylation level for two samples. Avg_coverage1 and avg_covereage2 gives the mean coverage for both samples. 
+Here, status refers to state of DMR (hyper/hypo). Mean_meth1 and mean_meth2 refers to mean methylation level for sample1 and 2 respectively. Delta refers to the difference in mean methylation level for two samples. Avg_coverage1 and avg_covereage2 gives the mean coverage for both samples. 
 
-The filtered output file is generated from the unfiltered file based on parameter mc, d and ml. 
 
 **DMR detection for more than two groups: time series**
 
 ```
-HOME-timeseries 	-t [CG/CHG/CHH/CHN/CNN]	-i [fullsamplepaths]		–nr [number of replicates for each sample]		-o [output_directorypath]
+HOME-timeseries 	-t [CG/CHG/CHH/CHN/CNN]	-i [fullsamplepaths]		-o [output_directorypath]
 ```
 Example: 
 
 ```
-HOME-timeseries 	-t CG 	-i ./testcase/CG/sample1_rep1.txt    ./testcase/CG/sample1_rep2.txt ./testcase/CG/sample2_rep1.txt   ./testcase/CG/sample2_rep2.txt    ./testcase/CG/sample3_rep1.txt ./testcase/CG/sample3_rep2.txt 	–nr  2 2 2 	–o /outputpath
+HOME-timeseries 	-t CG 	-i ./testcase/sample_file_CG.tsv	–o /outputpath
 ```
 Required arguments:
 
 ```
 -t  --type	            type of DMRs (CG /CHH/CHG/CHN/CNN) 
 
--i  --samplepaths     	path of samples (separated by space) 
-
--nr --numofrep	        number of replicates for each sample (separated by space)
+-i --samplefilepath Sample file containing sample names and sample path; the file should be tab seperated  
 
 -o  –-outputpath 		    path to the output directory  
 ```
@@ -173,25 +184,22 @@ Parameter			        default				      description
 -sc  --scorecutoff 		  0.5			        the score from the classifier for each C position 
 -npp -–numprocess 		   5	            number of cores to be used
 -ml  --minlength  		   50	           minimum length of DMRs required to be reported 
+-ns --numsamples       all      number of samples to use for timeseries DMR calling; default takes all sample in the sample file          -sp --startposition    1st position     start position of sample in the sample file to use for timeseries DMR calling 
+-BSSeeker2 --BSSeeker2 False  input CGmap file from BS-Seeker2
+-mc  --minc			         4 	        minimum number of C’s in a DMR
+-d   --delta			        0.1     	  minimum average difference in methylation required in a DMR 
 ```
 
 **Output format**
 
 ```
-chr	start	end	numC	len	max_delta	confidence_scores	comb1-n
+chr	start	end	numC	len	max_delta	confidence_scores	Comb1-n
 
 ```
 Here, Max_delta is the maximum average methylation difference among the compared samples. 
 Confidence score takes into account the length, number of C’s and SVM score. The higher value denotes more confident DMR. 
 Comb1-n denotes the pairwise comparisons for each combination of samples. It reports *start: end: state: delta* for each pairwise comparison. 
  
-*NOTE : The order of combination will be same as the order of input while running HOME. So in the example above there will be 3 combinations and:*
-
-*comb1 is Sample 1 vs Sample 2*
-
-*comb2 is Sample 1 vs Sample 3*
-
-*comb3 is Sample 2 vs Sample 3*
 
 # Required tools
 
@@ -210,40 +218,6 @@ Comb1-n denotes the pairwise comparisons for each combination of samples. It rep
 [rpy2 v2.7.7](https://pypi.python.org/pypi/rpy2/2.7.7)
 
 # Troubleshooting
-
-Error with rpy2 installation
-
-*make sure R is build with shared library*
-
-1. Install R with shared library
-
-```
-wget [R](https://cran.rstudio.com/src/base/R-3/R-3.2.2.tar.gz)
-
-tar -xzf R-3.2.2.tar.gz
-
-cd R-3.2.2
-
-./configure --prefix{path_to_R} --enable-R-shlib
-
-make
-
-make install
-
-Export R_HOME=/path/to/R/build 
-
-Export LD_LIBRARY_PATH=$R_HOME/lib 
-
-Add R to PATH (`which R` should return the new R binary)
-
-```
-
-2. Install rpy2
-
-```
-pip install rpy2
-
-```
 
 To stop HOME execution in middle:
 ```
