@@ -5,7 +5,7 @@ from whole genome bisulfite sequencing (WGBS) data. HOME can identify both pairw
 #Installation
 HOME is written for python 2.7 and tested on Linux system. It is recommended to set up virtual environment for python 2.7 first before installing HOME package.
 
-**Step 1:** Create a virtual environment for HOME*
+**Step 1:** Create a virtual environment for HOME
 
 ```
 virtualenv -p <path_to_python2.7> <env_name>
@@ -37,11 +37,11 @@ source activate HOMEenv
 python setup.py install
 ```
 # Usage
-HOME can be run in pairwise mode for two group comparisons and time series mode for more than two group comparisons. It can also be used for mutiple pairwise comparisions with large numper of input samples. 
+HOME can be run in pairwise mode for two group comparisons and time series mode for more than two group comparisons. It can also be used for mutiple pairwise comparisions with large number of input samples. 
 
-**BSSeeker2 CGmap file can be provided as input**
+**BSSeeker2 CGmap file can be provided as input file directly**
 **or**
-**Input file format as mentioned below**
+**Input file format as mentioned below needs to provided**
 
 Chromosome number, position, strand, type (CG/CHG/CHH) where H is anything but G, methylated reads and total number of reads. For a sample, this information are saved in a single tab separated text file without header, which can be compressed or uncompressed. Below shows an example of such file:
 
@@ -59,7 +59,7 @@ chr1	15825	-	CHH	11	19
 HOME-pairwise 	-t [CG/CHG/CHH/CHN/CNN]	 -i [sample_file_fullpath] 	-o [output_directorypath]
 ```
 
-*Note: In case of replicates for each sample separate them by space. Please check the number of cores to use and set them by npp parameter (default is 8). Also for non-CG DMR prediction for huge genomes like mammalian genome use parameter -sin.*
+*Note: Please check the number of cores to use and set them by npp parameter (default is 8). Also for non-CG DMR prediction for huge genomes like mammalian genome use parameter -sin.*
 
 Example: 
 ```
@@ -137,7 +137,7 @@ This parameter is used if you want to parallel the code by single chromosome. Th
 
 **Parameter –ns**
 
-This parameter is used if you want to use selected number of samples from your sample input file. The default is False, so the code will be use all the samples in the sample input file. It allows you to have as many samples as you want in your input file but control the number of samples to use for DMR calling. 
+This parameter is used if you want to use selected number of samples from your sample input file. The default is False, so the code will use all the samples in the sample input file. It allows you to have as many samples as you want in your input file but control the number of samples to use for DMR calling. 
 
 **Parameter –sp**
 
@@ -161,7 +161,7 @@ Here, status refers to state of DMR (hyper/hypo). Mean_meth1 and mean_meth2 refe
 **DMR detection for more than two groups: time series**
 
 ```
-HOME-timeseries 	-t [CG/CHG/CHH/CHN/CNN]	-i [fullsamplepaths]		-o [output_directorypath]
+HOME-timeseries 	-t [CG/CHG/CHH/CHN/CNN]	-i [sample_file_fullpath]		-o [output_directorypath]
 ```
 Example: 
 
@@ -206,7 +206,7 @@ Comb1-n denotes the pairwise comparisons for each combination of samples. It rep
 
 [python 2.7](https://www.python.org/download/releases/2.7/)
 
-[numpy v1.10.1](https://pypi.python.org/pypi/numpy/1.10.1)
+[numpy](https://pypi.python.org/pypi/numpy)
 
 [pandas v0.17.1](https://pypi.python.org/pypi/pandas/0.17.1/)
 
