@@ -144,7 +144,7 @@ def main(c):
                 model_path=os.getcwd()+'/saved_model/saved_model_CG.pickle'
                 k=ho.norm_slidingwin_predict_CG(df3,input_file_path,model_path)
                 
-            elif classes=="CHG" or classes=="CHH" or classes=="CHN":
+            elif classes=="CHG" or classes=="CHH" or classes=="CHN" or classes=="CNN":
        
                 input_file_path=os.getcwd()+'/training_data/training_data_nonCG.txt'
                 
@@ -321,6 +321,7 @@ if __name__ == "__main__":
           temp_file=[]
           k=k+1
           for ii in xrange(len(i)):
+              
          
               if not os.path.exists((o.outputpath+'/temp_HOME'+'/'+samplenames[k]+'_rep'+str(ii+1))):
                   
@@ -468,34 +469,24 @@ if __name__ == "__main__":
 ### multiprocessing the chromosomes        
         
         if npp==1:  
-            
-            #try:
+                     
     
                 for dx in s:
                    main(dx)
-                #shutil.rmtree(o.outputpath+'/temp_HOME', ignore_errors=True)
+                shutil.rmtree(o.outputpath+'/temp_HOME', ignore_errors=True)
                 print "Congratulations the DMRs are ready" 
-                #remEmptyDir(o.outputpath+'/HOME_DMRs/')
+                remEmptyDir(o.outputpath+'/HOME_DMRs/')
                 
-#            except Exception as e: 
-#                 print(e)
-#                 
-#                 shutil.rmtree(o.outputpath+'/temp_HOME', ignore_errors=True)
-#                 remEmptyDir(o.outputpath+'/HOME_DMRs/')
-#           
+          
         elif npp>1:
-            #try:
+           
                 pool1= multiprocessing.Pool(processes=npp)
                 process=[pool1.apply_async(main, args=(dx,)) for dx in s]
                 output = [p.get() for p in process]
                 pool1.close()
                 print "Congratulations the DMRs are ready"
                 pool1.join()
-#                shutil.rmtree(o.outputpath+'/temp_HOME', ignore_errors=True)
-#                remEmptyDir(o.outputpath+'/HOME_DMRs/')
+                shutil.rmtree(o.outputpath+'/temp_HOME', ignore_errors=True)
+                remEmptyDir(o.outputpath+'/HOME_DMRs/')
 
-#            except Exception as e: 
-#                 print(e)
-#                 pool1.close()
-#                 shutil.rmtree(o.outputpath+'/temp_HOME', ignore_errors=True)
-#                 remEmptyDir(o.outputpath+'/HOME_DMRs/')
+          
