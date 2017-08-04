@@ -59,7 +59,7 @@ chr1	15825	-	CHH	11	19
 HOME-pairwise 	-t [CG/CHG/CHH/CHN/CNN]	 -i [sample_file_fullpath] 	-o [output_directorypath]
 ```
 
-*Note: Please check the number of cores to use and set them by npp parameter (default is 8). Also for non-CG DMR prediction for huge genomes like mammalian genome use parameter -sin.*
+*Note: Please check the number of cores to use and set them by npp parameter (default is 8). Also for non-CG DMR prediction for huge genomes like mammalian genome use parameter **-sin**.*
 
 Example: 
 ```
@@ -75,22 +75,22 @@ Required arguments:
 ```
 
 Optional arguments: 
-```
-Parameter                 default    description	
-   -sc  --SVMscorecutoff  0.1        the score from the classifier for each C position 
-   -p   --pruncutoff      0.1        the SVM score checked for consecutive C’s from both ends to refine the boundaries.
-   -ml  --minlength       50         minimum length of DMRs required to be reported 
-   -ncb --numcb           5          minimum number of C’s present between DMRs to keep them seperate
-   -md  -–mergedist 		    500	       maximum distance allowed between DMRs to merge 
-   -npp --numprocess 		   8       	  number of cores to be used 
-   -mc  --minc			         3 	        minimum number of C’s in a DMR
-   -d   --delta			        0.1     	  minimum average difference in methylation required in a DMR 
-   -prn --prunningC			    3 	        number of consecutives C’s to be considered for pruning for boundary refinement
-   -sin --singlechrom     False      parallel the code for single chromosome
-   -ns --numsamples       all      number of samples to use for pairwise DMR calling; default takes all sample in the sample file
-   -sp --startposition    1st position     start position of sample in the sample file to use for pairwise DMR calling 
-   -BSSeeker2 --BSSeeker2 False  input CGmap file from BS-Seeker2
-```
+
+| Parameter                 | Default       | Description   |	
+| :------------------------ |:-------------:| :-------------|
+| -sc --scorecutoff 	       |	0.1           |the score from the classifier for each C position
+| -p  --pruncutoff          | 0.1           |the SVM score checked for consecutive Cs from both ends to refine the boundaries
+| -npp -–numprocess 	       |	8	            |number of cores to be used
+| -ml --minlength  		       | 50	           | minimum length of DMRs required to be reported 
+| -ncb --numcb 		           | 5             | minimum number of Cs present between DMRs to keep them seperate
+| -md  -–mergedist 	        | 500           | maximum distance allowed between DMRs to merge 
+| -prn --prunningC	         | 3             | number of consecutives Cs to be considered for pruning for boundary refinement2
+| -ns --numsamples          | all           | no.of samples to use for DMR calling; default takes all sample in the file
+| -sp --startposition       | 1st position  | start position of sample in the sample file to use for timeseries DMR calling 
+| -BSSeeker2 --BSSeeker2    | False         | input CGmap file from BSSeeker2
+| -mc --minc			             | 3 	           | minimum number of Cs in a DMR
+| -sin --singlechrom			     | False         | parallel code for single chromosome; *npp* will be used for parallel run for each chr
+| -d --delta			             | 0.1     	     | minimum average difference in methylation required in a DMR 
 
 **Parameter –sc**
 
@@ -133,7 +133,7 @@ This parameter is used in relation to parameter –p (described above). This con
 
 **Parameter –sin**
 
-This parameter is used if you want to parallel the code by single chromosome. The default is False, so the code will be parallel for all chromosomes. It should be used with huge chromosomes for example in case of non-CG DMR prediction for mammalian genome. If the genome size is small it is adviced not to use it.  
+This parameter is used if you want to parallel the code by single chromosome. The default is False, so the code will be parallel for all chromosomes. It should be used with huge chromosomes for example in case of non-CG DMR prediction for mammalian genome. If the genome size is small it is adviced not to use it. To turn it on just say *-sin* in the command line. 
 
 **Parameter –ns**
 
@@ -145,7 +145,7 @@ This parameter is used if you want to select the samples from anywhere in your s
 
 **Parameter –BSSeeker2**
 
-This parameter is used if you want to provide CGmap file directly. The default is False, so the code will require the files in the input format mentioned above. If the user have methyaltion output files from BSSeeker2, it can be provided directly. 
+This parameter is used if you want to provide CGmap file directly. The default is False, so the code will require the files in the input format mentioned above. If the user have methyaltion output files from BSSeeker2, it can be provided directly. To turn it on just say *-BSSeeker2* in the command line. 
 
 **Output format**
 
@@ -180,16 +180,19 @@ Required arguments:
 
 Optional arguments: 
 
-```
-Parameter			        default				      description	
--sc  --scorecutoff 		  0.5			        the score from the classifier for each C position 
--npp -–numprocess 		   5	            number of cores to be used
--ml  --minlength  		   50	           minimum length of DMRs required to be reported 
--ns --numsamples       all      number of samples to use for timeseries DMR calling; default takes all sample in the sample file          -sp --startposition    1st position     start position of sample in the sample file to use for timeseries DMR calling 
--BSSeeker2 --BSSeeker2 False  input CGmap file from BS-Seeker2
--mc  --minc			         4 	        minimum number of C’s in a DMR
--d   --delta			        0.1     	  minimum average difference in methylation required in a DMR 
-```
+
+| Parameter                 | Default       | Description   |	
+| :-------------------------|:-------------:| :-------------|
+| -sc --scorecutoff 	       |	0.5			        | the score from the classifier for each C position 
+| -npp -–numprocess 	       |	5	            | number of cores to be used
+| -ml --minlength  		       | 50	           | minimum length of DMRs required to be reported 
+| -ns --numsamples          | all           | no.of samples to use for DMR calling; default takes all sample in the file
+| -sp --startposition       | 1st position  | start position of sample in the sample file to use for timeseries DMR calling 
+| -BSSeeker2 --BSSeeker2    | False         | input CGmap file from BSSeeker2
+| -mc --minc			             | 4 	           | minimum number of Cs in a DMR
+| -d --delta			             | 0.1     	     | minimum average difference in methylation required in a DMR
+| -sin --singlechrom			     | False         | parallel code for single chromosome; *npp* will be used for parallel run for each chr
+
 
 **Output format**
 
