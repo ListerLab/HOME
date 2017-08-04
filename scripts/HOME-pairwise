@@ -89,6 +89,7 @@ def main(c):
             df = pd.merge(dfa, dfb, how='inner', on=['chr','pos',"strand","type"])
             df=df.sort_values(['pos'])
             df1=ho.format_allc(df, classes)
+            
             del(df) 
     
             if min(numreps)>1 and max(numreps)>1:
@@ -137,7 +138,7 @@ def main(c):
             else:
             
                 df3=ho.pval_cal_withoutrep(df1)
-       
+               
             if classes=="CG":
     
                 input_file_path=os.getcwd()+'/training_data/training_data_CG.txt'
@@ -147,7 +148,7 @@ def main(c):
                 tr=o.pruncutoff
                 dmrs=ho.clustandtrim_CG(k,df3,sc,tr,dis_thres,ncb,prn,len_cutoff)
                 dmrs_filtered=ho.filterdmr(dmrs,minlen,mc,d)
-            elif classes=="CHG" or classes=="CHH" or classes=="CHN":
+            elif classes=="CHG" or classes=="CHH" or classes=="CHN" or classes=="CNN":
        
                 input_file_path=os.getcwd()+'/training_data/training_data_nonCG.txt'
                 
@@ -202,10 +203,11 @@ def main(c):
                     dmrs=pd.concat(output, ignore_index=True,axis=0)
                 else:
                     pre_dmr=ho.clustandtrim_nonCG1(k,sc)
+                    
                     dmrs=ho.clustandtrim_nonCG2(k,pre_dmr,dis_thres,ncb,len_cutoff)
-            
+                    
                 dmrs_filtered=ho.filterdmr(dmrs,minlen,mc,d) 
-              
+                
             if len(dmrs_filtered)>=1: 
                 
                 dmr_final=pd.concat([df1.chr[0:len(dmrs_filtered)],dmrs_filtered],axis=1)
@@ -444,22 +446,17 @@ if __name__ == "__main__":
         
         if npp==1:  
             
-            try:
+        
     
                 for dx in s:
                    main(dx)
                 shutil.rmtree(o.outputpath+'/temp_HOME', ignore_errors=True)
                 print "Congratulations the DMRs are ready" 
                 remEmptyDir(o.outputpath+'/HOME_DMRs/')
-                
-            except Exception as e: 
-                 print(e)
-                 
-                 shutil.rmtree(o.outputpath+'/temp_HOME', ignore_errors=True)
-                 remEmptyDir(o.outputpath+'/HOME_DMRs/')
-           
+   
+#           
         elif npp>1:
-            try:
+          
                 pool1= multiprocessing.Pool(processes=npp)
                 process=[pool1.apply_async(main, args=(dx,)) for dx in s]
                 output = [p.get() for p in process]
@@ -469,8 +466,4 @@ if __name__ == "__main__":
                 shutil.rmtree(o.outputpath+'/temp_HOME', ignore_errors=True)
                 remEmptyDir(o.outputpath+'/HOME_DMRs/')
 
-            except Exception as e: 
-                 print(e)
-                 pool1.close()
-                 shutil.rmtree(o.outputpath+'/temp_HOME', ignore_errors=True)
-                 remEmptyDir(o.outputpath+'/HOME_DMRs/')
+#       
