@@ -225,9 +225,16 @@ Comb1-n denotes the pairwise comparisons for each combination of samples. It rep
 
 To stop HOME execution in middle:
 ```
+cntrl+c and then
 cntrl+z
 ```
 *Note: always delete the directories created by HOME run if stopped in middle*
+
+Error *Exception: File...training_data file does not exist*
+
+```
+Please remember to CD into HOME first before starting the run 
+```
 
 # Citation
 
