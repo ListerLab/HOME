@@ -10,7 +10,7 @@ setup(
     description="HOME: Histogram Of MEthylation",
     author = 'akanksha srivastava',
     install_requires = [
-        'numpy==1.10.1',
+        'numpy',
         'pandas==0.17.1',
         'scipy==0.16.0',
         'scikit-learn==0.16.1',
