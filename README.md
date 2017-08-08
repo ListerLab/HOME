@@ -69,7 +69,7 @@ Required arguments:
 ```
  -t --type 	        Type of DMRs (CG /CHH/CHG/CHN/CNN) 
 
- -i --samplefilepath Sample file containing sample names and sample path; the file should be tab seperated  
+ -i --samplefilepath Sample file containing sample names and sample paths for each replicate (TAB sep); each sample info should be in different rows
  
  -o --outputpath 	  Path to the output directory  
 ```
@@ -173,7 +173,7 @@ Required arguments:
 ```
 -t  --type	            type of DMRs (CG /CHH/CHG/CHN/CNN) 
 
--i --samplefilepath Sample file containing sample names and sample path; the file should be tab seperated  
+-i --samplefilepath Sample file containing sample names and sample paths for each replicate (TAB sep); each sample info should be in different rows 
 
 -o  –-outputpath 		    path to the output directory  
 ```
