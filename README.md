@@ -23,7 +23,7 @@ source <env_name>/bin/activate
 **Step 3:** Install the HOME package outside virtual environment but make sure that the virtual environment is active
 
 ```
-git clone https://github.com/Akanksha2511/HOME.git
+git clone https://github.com/ListerLab/HOME.git
 cd ./HOME
 pip install -r requirements.txt
 python setup.py install
