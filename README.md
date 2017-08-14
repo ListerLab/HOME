@@ -30,7 +30,7 @@ python setup.py install
 ```
 ***For conda users**
 ```
-git clone https://github.com/Akanksha2511/HOME.git
+git clone https://github.com/ListerLab/HOME.git
 cd ./HOME
 conda env create    *assuming the conda environment is activated and R is already installed in it*
 source activate HOMEenv
