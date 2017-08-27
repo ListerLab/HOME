@@ -240,6 +240,7 @@ def main(c):
             scores=pd.DataFrame(scores,columns=['confidence_scores'])
             max_delta=pd.DataFrame(max_delta,columns=['max_delta'])
             name_win=[]
+            comb_samples=itertools.combinations(list(samplenames), 2)
             for i in comb_samples:
 # 
                 name_win.append(i[0]+"_VS_"+i[1])
