@@ -262,7 +262,7 @@ parser.add_argument('-t','--type', help='type of class', choices=["CG","CHG","CH
 parser.add_argument('-o','--outputpath', help='path where the DMRs will be saved', required=True)
 parser.add_argument('-npp','--numprocess', help='number of process to be run at a time', required=False, type=int,default=10)
 parser.add_argument('-sc','--scorecutoff',  help='min classifier score required to cluster the DMR',choices=np.arange(0,1,0.1), required=False, type=float,default=0.5)
-parser.add_argument('-ml','--minlength', help='minimum length of DMRs to be reported', required=False, type=int,default=10)
+parser.add_argument('-ml','--minlength', help='minimum length of DMRs to be reported', required=False, type=int,default=50)
 parser.add_argument('-sin','--singlechrom',  help='parallel for single chromosomes',action='store_true',default=False)
 parser.add_argument('-ns','--numsamples', help='number of samples to use for pairwise DMR calling', required=False, type=int)
 parser.add_argument('-sp','--startposition', help='start position of samples to use for pairwise DMR calling', required=False, type=int)
