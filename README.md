@@ -219,7 +219,6 @@ Comb1-n denotes the pairwise comparisons for each combination of samples. It rep
 
 [statsmodels v0.6.1](https://pypi.python.org/pypi/statsmodels/0.6.1)
 
-[rpy2 v2.7.7](https://pypi.python.org/pypi/rpy2/2.7.7)
 
 # Troubleshooting
 
