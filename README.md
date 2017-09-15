@@ -237,4 +237,4 @@ Please remember to CD into HOME first before starting the run
 
 # Citation
 
-If you use this software in your work, please cite.
+If you use this software in your work, please cite [https://github.com/ListerLab/HOME](https://github.com/ListerLab/HOME)
