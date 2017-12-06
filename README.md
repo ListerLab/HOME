@@ -79,7 +79,7 @@ Required arguments:
  
  -o --outputpath 	  Path to the output directory  
 ```
-The default parameters for HOME are relatively permissive. To run HOME with more stringent setting please change the defaults parameters as below or higher:
+The default parameters for HOME are **relatively permissive**. To run HOME with more stringent setting please change the defaults parameters as below or higher:
 ```
 HOME-pairwise 	-t CG 	-i ./testcase/sample_file_CG.tsv -o ./outputpath --delta 0.2 --minc 5 
 ```
