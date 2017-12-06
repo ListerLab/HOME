@@ -150,7 +150,7 @@ This parameter is used if you want to use selected number of samples from your s
 
 **Parameter –sp**
 
-This parameter is used if you want to select the samples from anywhere in your sample input file. This parameter is used along with ** ns** parameter. The default is False, so the code will start from the 1st sample in the sample input file. It allows you to have as many samples as you want in your input file but control the samples to use for DMR calling. 
+This parameter is used if you want to select the samples from anywhere in your sample input file. This parameter is used along with **ns** parameter. The default is False, so the code will start from the 1st sample in the sample input file. It allows you to have as many samples as you want in your input file but control the samples to use for DMR calling. 
 
 **Parameter –BSSeeker2**
 
