@@ -64,7 +64,13 @@ HOME-pairwise 	-t [CG/CHG/CHH/CHN/CNN]	 -i [sample_file_fullpath] 	-o [output_di
 Example: 
 ```
 HOME-pairwise 	-t CG 	-i ./testcase/sample_file_CG.tsv 	-o ./outputpath 
+
+or (if CGmap files from BSSeeker2)
+
+HOME-pairwise 	-t CG 	-i ./testcase/sample_file_CG.tsv 	-o ./outputpath --BSSeeker2
+
 ```
+
 Required arguments:
 ```
  -t --type 	        Type of DMRs (CG /CHH/CHG/CHN/CNN) 
@@ -73,7 +79,10 @@ Required arguments:
  
  -o --outputpath 	  Path to the output directory  
 ```
-
+The default parameters for HOME are relatively permissive. To run HOME with more stringent setting please change the defaults parameters as below or higher:
+```
+HOME-pairwise 	-t CG 	-i ./testcase/sample_file_CG.tsv -o ./outputpath --delta 0.2 --minc 5 
+```
 Optional arguments: 
 
 | Parameter                 | Default       | Description   |	
@@ -237,4 +246,4 @@ Please remember to CD into HOME first before starting the run
 
 # Citation
 
-If you use this software in your work, please cite [https://github.com/ListerLab/HOME](https://github.com/ListerLab/HOME)
+If you use this software in your work, please cite our paper [HOME](https://www.biorxiv.org/content/early/2017/12/02/228221)
