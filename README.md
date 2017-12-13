@@ -243,6 +243,11 @@ Error *Exception: File...training_data file does not exist*
 ```
 Please remember to CD into HOME first before starting the run 
 ```
+Error while installing dependencies from requirement file: for example "Compilation failed : pyconfig.h: No such file or directory"
+
+```
+sudo apt-get install python-dev
+```
 
 # Citation
 
