@@ -10,7 +10,7 @@ from itertools import groupby
 import numpy as np
 
 from sklearn import preprocessing
-from sklearn.externals import joblib
+#from sklearn.externals import joblib
 import statsmodels.stats.proportion as sm
 
 
@@ -166,9 +166,10 @@ def norm_slidingwin_predict_CG(df_file,input_file_path,model_path):
 
     x=[]
     status=[]
-    clf = None
- 
-    clf = joblib.load(model_path)
+    #clf = None
+    W=np.load(model_path+"W.npy")
+    b=np.load(model_path+"b.npy")
+    #clf = joblib.load(model_path)
     x=np.array(df_file1)
 
     scaler = preprocessing.StandardScaler().fit(x)
@@ -206,7 +207,8 @@ def norm_slidingwin_predict_CG(df_file,input_file_path,model_path):
             sum1=hist/k
             norm_value.append(sum1)
     X_test_scaler=scaler.transform(norm_value)
-    y_pred=pd.DataFrame(((clf.decision_function(X_test_scaler))), columns=['predicted_values'],dtype='float' )
+    y_pred_int=np.dot(X_test_scaler,np.transpose(W))+b
+    y_pred=pd.DataFrame(y_pred_int, columns=['predicted_values'],dtype='float' )
     y_final= np.exp((b + m*y_pred)) / (1 + np.exp((b + m*y_pred))) 
     y_final.columns=['glm_predicted_values']
     status=pd.DataFrame(status,columns=['win_sign'],dtype='float')
@@ -224,9 +226,10 @@ def norm_slidingwin_predict_nonCG(df_file,input_file_path,model_path):
     
     x=[]
     status=[]
-    clf = None
-     
-    clf = joblib.load(model_path)
+    #clf = None
+    W=np.load(model_path+"W.npy")
+    b=np.load(model_path+"b.npy") 
+    #clf = joblib.load(model_path)
     x=np.array(df_file1)
     
     scaler = preprocessing.StandardScaler().fit(x)
@@ -262,7 +265,7 @@ def norm_slidingwin_predict_nonCG(df_file,input_file_path,model_path):
              break
     #print norm_value
     X_test_scaler=scaler.transform(norm_value)
-    y_pred=pd.DataFrame((clf.decision_function(X_test_scaler))) 
+    y_pred=np.dot(X_test_scaler,np.transpose(W))+b 
     y_pred.columns=['predicted_values']
     y_final= np.exp((b + m*y_pred)) / (1 + np.exp((b + m*y_pred))) 
     y_final.columns=['glm_predicted_values']
@@ -441,7 +444,7 @@ def clustandtrim_CG(k,df1,sc,tr,dis_thres,ncb,prn,len_cutoff):
                        avg_meth_case=total_meth_case.sum()/(len(total_meth_case))
                        total_meth_cont=df1.meth_cont[p_start[0]:p_stop[0]]
                        avg_meth_cont=total_meth_cont.sum()/(len(total_meth_cont))
-                       delta_diff=avg_meth_case-avg_meth_cont
+                       delta_diff=avg_meth_cont-avg_meth_case
                        dif=dif.abs()
                       
                        start_indx=k.pos[k.pos==cg_start].index[0]
@@ -464,8 +467,8 @@ def clustandtrim_CG(k,df1,sc,tr,dis_thres,ncb,prn,len_cutoff):
                        coverage_sample1.append(coverage_cont)
                        coverage_sample2.append(coverage_case)
                 break 
-    mean_diff_case=pd.DataFrame(mean_diff_case,columns=['mean_Meth1'],dtype='float')
-    mean_diff_cont=pd.DataFrame(mean_diff_cont,columns=['mean_Meth2'],dtype='float')              
+    mean_diff_case=pd.DataFrame(mean_diff_case,columns=['mean_Meth2'],dtype='float')
+    mean_diff_cont=pd.DataFrame(mean_diff_cont,columns=['mean_Meth1'],dtype='float')              
     comb_diff=pd.DataFrame(comb_diff,columns=['delta'],dtype='float')
     dmr_start=pd.DataFrame(dmr_start,columns=['start'],dtype='int')
     dmr_stop=pd.DataFrame(dmr_stop,columns=['end'],dtype='int')
@@ -474,7 +477,7 @@ def clustandtrim_CG(k,df1,sc,tr,dis_thres,ncb,prn,len_cutoff):
     avg_number_of_Cs_sample1=pd.DataFrame(coverage_sample1,columns=['avg_coverage1'],dtype='int')
     avg_number_of_Cs_sample2=pd.DataFrame(coverage_sample2,columns=['avg_coverage2'],dtype='int')
     length=pd.DataFrame(dmr_stop.end-dmr_start.start,columns=['len'],dtype='int')
-    final_dmrs=pd.concat([dmr_start,dmr_stop,status_dmr,number_of_Cs,mean_diff_case,mean_diff_cont,comb_diff,avg_number_of_Cs_sample1,avg_number_of_Cs_sample2,length],axis=1)
+    final_dmrs=pd.concat([dmr_start,dmr_stop,status_dmr,number_of_Cs,mean_diff_cont,mean_diff_case,comb_diff,avg_number_of_Cs_sample1,avg_number_of_Cs_sample2,length],axis=1)
     final_dmrs=final_dmrs.loc[(final_dmrs.status != 'hemi')]
     final_dmrs=final_dmrs.reset_index(drop=True)
     return (final_dmrs)
@@ -660,7 +663,7 @@ def clustandtrim_nonCG2(k,final_dmrs,dis_thres,ncb,len_cutoff):
                    avg_meth_case=total_meth_case.sum()/(len(total_meth_case))
                    total_meth_cont=k.meth_cont[p_start[0]:p_stop[0]+1]
                    avg_meth_cont=total_meth_cont.sum()/(len(total_meth_cont))
-                   delta_diff=avg_meth_case-avg_meth_cont
+                   delta_diff=avg_meth_cont-avg_meth_case
                    dif=dif.abs()
                   
                    win_sign=k.win_sign[p_start[0]:p_stop[0]+1]
@@ -681,8 +684,8 @@ def clustandtrim_nonCG2(k,final_dmrs,dis_thres,ncb,len_cutoff):
                    coverage_sample1.append(coverage_cont)
                    coverage_sample2.append(coverage_case)
                    
-    mean_diff_case=pd.DataFrame(mean_diff_case,columns=['mean_Meth1'],dtype='float')
-    mean_diff_cont=pd.DataFrame(mean_diff_cont,columns=['mean_Meth2'],dtype='float')              
+    mean_diff_case=pd.DataFrame(mean_diff_case,columns=['mean_Meth2'],dtype='float')
+    mean_diff_cont=pd.DataFrame(mean_diff_cont,columns=['mean_Meth1'],dtype='float')              
     comb_diff=pd.DataFrame(comb_diff,columns=['delta'],dtype='float')
     dmr_start=pd.DataFrame(dmr_start,columns=['start'],dtype='int')
     dmr_stop=pd.DataFrame(dmr_stop,columns=['end'],dtype='int')
@@ -691,7 +694,7 @@ def clustandtrim_nonCG2(k,final_dmrs,dis_thres,ncb,len_cutoff):
     avg_number_of_Cs_sample1=pd.DataFrame(coverage_sample1,columns=['avg_coverage1'],dtype='int')
     avg_number_of_Cs_sample2=pd.DataFrame(coverage_sample2,columns=['avg_coverage2'],dtype='int')
     length=pd.DataFrame(dmr_stop.end-dmr_start.start,columns=['len'],dtype='int')
-    final_dmrs=pd.concat([dmr_start,dmr_stop,status_dmr,number_of_Cs,mean_diff_case,mean_diff_cont,comb_diff,avg_number_of_Cs_sample1,avg_number_of_Cs_sample2,length],axis=1)
+    final_dmrs=pd.concat([dmr_start,dmr_stop,status_dmr,number_of_Cs,mean_diff_cont,mean_diff_case,comb_diff,avg_number_of_Cs_sample1,avg_number_of_Cs_sample2,length],axis=1)
     final_dmrs=final_dmrs.loc[(final_dmrs.status != 'hemi')]
     final_dmrs=final_dmrs.reset_index(drop=True)
     
@@ -707,9 +710,11 @@ def norm_slidingwin_predict_nonCG_withoutchunk(df_file,input_file_path,model_pat
 
     x=[]
     status=[]
-    clf = None
- 
-    clf = joblib.load(model_path)
+    W=np.load(model_path+"W.npy")
+    b=np.load(model_path+"b.npy") 
+#    clf = None
+# 
+#    clf = joblib.load(model_path)
     x=np.array(df_file1)
 
     scaler = preprocessing.StandardScaler().fit(x)
@@ -747,7 +752,8 @@ def norm_slidingwin_predict_nonCG_withoutchunk(df_file,input_file_path,model_pat
             sum1=hist/k
             norm_value.append(sum1)
     X_test_scaler=scaler.transform(norm_value)
-    y_pred=pd.DataFrame(((clf.decision_function(X_test_scaler))), columns=['predicted_values'],dtype='float' )
+    y_pred_int=np.dot(X_test_scaler,np.transpose(W))+b 
+    y_pred=pd.DataFrame(y_pred_int, columns=['predicted_values'],dtype='float' )
     y_final= np.exp((b + m*y_pred)) / (1 + np.exp((b + m*y_pred))) 
     y_final.columns=['glm_predicted_values']
     status=pd.DataFrame(status,columns=['win_sign'],dtype='float')

@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import subprocess
 from sklearn import preprocessing
-from sklearn.externals import joblib
+#from sklearn.externals import joblib
 import statsmodels.stats.proportion as sm
 
 def format_allc(df,classes):
@@ -158,9 +158,11 @@ def norm_slidingwin_predict_CG(df_file,input_file_path,model_path):
     delta=[]
     x=[]
     status=[]
-    clf = None
- 
-    clf = joblib.load(model_path)
+    W=np.load(model_path+"W.npy")
+    b=np.load(model_path+"b.npy")
+#    clf = None
+# 
+#    clf = joblib.load(model_path)
     x=np.array(df_file1)
 
     scaler = preprocessing.StandardScaler().fit(x)
@@ -200,8 +202,8 @@ def norm_slidingwin_predict_CG(df_file,input_file_path,model_path):
             sum1=hist/k
             norm_value.append(sum1)
     X_test_scaler=scaler.transform(norm_value)
+    y_pred=np.dot(X_test_scaler,np.transpose(W))+b
     
-    y_pred=pd.DataFrame((clf.decision_function(X_test_scaler))) 
     y_pred.columns=['predicted_values']
     
     y_final= np.exp((b + m*y_pred)) / (1 + np.exp((b + m*y_pred))) 
@@ -223,9 +225,11 @@ def norm_slidingwin_predict_nonCG_withoutchunk(df_file,input_file_path,model_pat
 
     x=[]
     status=[]
-    clf = None
+    #clf = None
     delta=[]
-    clf = joblib.load(model_path)
+    W=np.load(model_path+"W.npy")
+    b=np.load(model_path+"b.npy")
+    #clf = joblib.load(model_path)
     x=np.array(df_file1)
 
     scaler = preprocessing.StandardScaler().fit(x)
@@ -263,7 +267,8 @@ def norm_slidingwin_predict_nonCG_withoutchunk(df_file,input_file_path,model_pat
             sum1=hist/k
             norm_value.append(sum1)
     X_test_scaler=scaler.transform(norm_value)
-    y_pred=pd.DataFrame(((clf.decision_function(X_test_scaler))), columns=['predicted_values'],dtype='float' )
+    y_pred_int=np.dot(X_test_scaler,np.transpose(W))+b
+    y_pred=pd.DataFrame(y_pred_int, columns=['predicted_values'],dtype='float' )
     y_final= np.exp((b + m*y_pred)) / (1 + np.exp((b + m*y_pred))) 
     y_final.columns=['glm_predicted_values']
     status=pd.DataFrame(status,columns=['win_sign'],dtype='float')
@@ -285,9 +290,10 @@ def norm_slidingwin_predict_nonCG(df_file,input_file_path,model_path):
     delta=[]
     x=[]
     status=[]
-    clf = None
-     
-    clf = joblib.load(model_path)
+    #clf = None
+    W=np.load(model_path+"W.npy")
+    b=np.load(model_path+"b.npy") 
+    #clf = joblib.load(model_path)
     x=np.array(df_file1)
     
     scaler = preprocessing.StandardScaler().fit(x)
@@ -324,7 +330,7 @@ def norm_slidingwin_predict_nonCG(df_file,input_file_path,model_path):
              break
     #print norm_value
     X_test_scaler=scaler.transform(norm_value)
-    y_pred=pd.DataFrame((clf.decision_function(X_test_scaler))) 
+    y_pred=np.dot(X_test_scaler,np.transpose(W))+b
     y_pred.columns=['predicted_values']
     y_final= np.exp((b + m*y_pred)) / (1 + np.exp((b + m*y_pred))) 
     y_final.columns=['glm_predicted_values']

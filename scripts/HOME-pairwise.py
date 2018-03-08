@@ -142,7 +142,7 @@ def main(c):
             if classes=="CG":
     
                 input_file_path=os.getcwd()+'/training_data/training_data_CG.txt'
-                model_path=os.getcwd()+'/saved_model/saved_model_CG.pickle'
+                model_path=os.getcwd()+'/saved_model/CG/'
                 k=ho.norm_slidingwin_predict_CG(df3,input_file_path,model_path)
                 len_cutoff=10
                 tr=o.pruncutoff
@@ -152,7 +152,7 @@ def main(c):
        
                 input_file_path=os.getcwd()+'/training_data/training_data_nonCG.txt'
                 
-                model_path=os.getcwd()+'/saved_model/saved_model_nonCG.pickle'
+                model_path=os.getcwd()+'/saved_model/nonCG/'
                 if nop>1:
                     CHUNKSIZE = int(len(df3)/nop)
                     df_chunk=ho.chunker(df3,CHUNKSIZE)
