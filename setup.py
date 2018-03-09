@@ -17,7 +17,7 @@ setup(
         'statsmodels>=0.6.1',
     ],
     author_email = 'akanksha.srivastava@research.uwa.edu.au',
-    python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*'
+    python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*',
     scripts = ["scripts/HOME-pairwise","scripts/HOME-timeseries"],
     packages = ['HOME'],
 )
