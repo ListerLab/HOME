@@ -168,7 +168,7 @@ def norm_slidingwin_predict_CG(df_file,input_file_path,model_path):
     status=[]
     #clf = None
     W=np.load(model_path+"W.npy")
-    b=np.load(model_path+"b.npy")
+    bb=np.load(model_path+"b.npy")
     #clf = joblib.load(model_path)
     x=np.array(df_file1)
 
@@ -207,7 +207,7 @@ def norm_slidingwin_predict_CG(df_file,input_file_path,model_path):
             sum1=hist/k
             norm_value.append(sum1)
     X_test_scaler=scaler.transform(norm_value)
-    y_pred_int=np.dot(X_test_scaler,np.transpose(W))+b
+    y_pred_int=np.dot(X_test_scaler,np.transpose(W))+bb
     y_pred=pd.DataFrame(y_pred_int, columns=['predicted_values'],dtype='float' )
     y_final= np.exp((b + m*y_pred)) / (1 + np.exp((b + m*y_pred))) 
     y_final.columns=['glm_predicted_values']
@@ -228,7 +228,7 @@ def norm_slidingwin_predict_nonCG(df_file,input_file_path,model_path):
     status=[]
     #clf = None
     W=np.load(model_path+"W.npy")
-    b=np.load(model_path+"b.npy") 
+    bb=np.load(model_path+"b.npy") 
     #clf = joblib.load(model_path)
     x=np.array(df_file1)
     
@@ -265,7 +265,7 @@ def norm_slidingwin_predict_nonCG(df_file,input_file_path,model_path):
              break
     #print norm_value
     X_test_scaler=scaler.transform(norm_value)
-    y_pred=np.dot(X_test_scaler,np.transpose(W))+b 
+    y_pred=np.dot(X_test_scaler,np.transpose(W))+bb 
     y_pred.columns=['predicted_values']
     y_final= np.exp((b + m*y_pred)) / (1 + np.exp((b + m*y_pred))) 
     y_final.columns=['glm_predicted_values']
@@ -711,7 +711,7 @@ def norm_slidingwin_predict_nonCG_withoutchunk(df_file,input_file_path,model_pat
     x=[]
     status=[]
     W=np.load(model_path+"W.npy")
-    b=np.load(model_path+"b.npy") 
+    bb=np.load(model_path+"b.npy") 
 #    clf = None
 # 
 #    clf = joblib.load(model_path)
@@ -752,7 +752,7 @@ def norm_slidingwin_predict_nonCG_withoutchunk(df_file,input_file_path,model_pat
             sum1=hist/k
             norm_value.append(sum1)
     X_test_scaler=scaler.transform(norm_value)
-    y_pred_int=np.dot(X_test_scaler,np.transpose(W))+b 
+    y_pred_int=np.dot(X_test_scaler,np.transpose(W))+bb 
     y_pred=pd.DataFrame(y_pred_int, columns=['predicted_values'],dtype='float' )
     y_final= np.exp((b + m*y_pred)) / (1 + np.exp((b + m*y_pred))) 
     y_final.columns=['glm_predicted_values']
