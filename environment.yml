@@ -4,8 +4,8 @@ channels:
 dependencies:
 - r
 - python=2.7
-- numpy>=1.9.3
-- pandas>=0.17.1
-- scipy>=0.16.0
-- scikit-learn>=0.16.1
-- statsmodels>=0.6.1
+- numpy
+- pandas==0.17.1
+- scipy==0.16.0
+- scikit-learn==0.16.1
+- statsmodels==0.6.1
