@@ -3,7 +3,7 @@ channels:
 - r
 dependencies:
 - r
-- python=2.7
+- python=2.7.5
 - numpy
 - pandas==0.17.1
 - scipy==0.16.0
