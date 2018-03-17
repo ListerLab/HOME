@@ -23,6 +23,10 @@ source <env_name>/bin/activate
 **Step 3:** Install the HOME package outside virtual environment but make sure that the virtual environment is active
 
 ```
+pip install git+https://github.com/ListerLab/HOME.git
+
+or
+
 git clone https://github.com/ListerLab/HOME.git
 cd ./HOME
 pip install -r requirements.txt
@@ -36,6 +40,7 @@ conda env create    *assuming the conda environment is activated and R is alread
 source activate HOMEenv
 python setup.py install
 ```
+
 # Usage
 HOME can be run in pairwise mode for two group comparisons and time series mode for more than two group comparisons. It can also be used for mutiple pairwise comparisions with large number of input samples. 
 
