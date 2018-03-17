@@ -265,7 +265,7 @@ def norm_slidingwin_predict_nonCG(df_file,input_file_path,model_path):
              break
     #print norm_value
     X_test_scaler=scaler.transform(norm_value)
-    y_pred=np.dot(X_test_scaler,np.transpose(W))+bb 
+    y_pred=pd.DataFrame(np.dot(X_test_scaler,np.transpose(W))+bb) 
     y_pred.columns=['predicted_values']
     y_final= np.exp((b + m*y_pred)) / (1 + np.exp((b + m*y_pred))) 
     y_final.columns=['glm_predicted_values']
