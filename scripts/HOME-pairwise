@@ -206,7 +206,7 @@ def main(c):
                     
                     dmrs=ho.clustandtrim_nonCG2(k,pre_dmr,dis_thres,ncb,len_cutoff)
                     
-                dmrs_filtered=ho.filterdmr(dmrs,minlen,mc,d) 
+                dmrs_filtered=ho.filterdmr_nonCG(dmrs,minlen,mc,d) 
                 
             if len(dmrs_filtered)>=1: 
                 
