@@ -105,6 +105,7 @@ Optional arguments:
 | -mc --minc			             | 3 	           | minimum number of Cs in a DMR
 | -sin --singlechrom			     | False         | parallel code for single chromosome; *npp* will be used for parallel run for each chr
 | -d --delta			             | 0.1     	     | minimum average difference in methylation required in a DMR 
+| -wrt --withrespectto		    | all     	     | samples to use for DMR calling for pairwise comparisions with respect to specific samples
 
 **Parameter –sc**
 
@@ -160,6 +161,13 @@ This parameter is used if you want to select the samples from anywhere in your s
 **Parameter –BSSeeker2**
 
 This parameter is used if you want to provide CGmap file directly. The default is False, so the code will require the files in the input format mentioned above. If the user have methyaltion output files from BSSeeker2, it can be provided directly. To turn it on just say *-BSSeeker2* in the command line. 
+
+**Parameter –wrt**
+
+This parameter is used if user want to run multiple parawise comparsions with recpect to only specific samples, instead of for all pairwise combinations. For example if user want to compare control (cnt) with all other samples, he/she can use below command
+```
+HOME-pairwise 	-t [CG/CHG/CHH/CHN/CNN]	 -i [sample_file_fullpath] -wrt cnt	-o [output_directorypath]
+
 
 **Output format**
 
