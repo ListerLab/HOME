@@ -164,10 +164,11 @@ This parameter is used if you want to provide CGmap file directly. The default i
 
 **Parameter –wrt**
 
-This parameter is used if user want to run multiple parawise comparsions with recpect to only specific samples, instead of for all pairwise combinations. For example if user want to compare control (cnt) with all other samples, he/she can use below command
+This parameter is used if user want to run multiple parawise comparsions with recpect to only specific samples, instead of for all pairwise combinations. For example if user want to compare control (cnt) with all other samples, he/she can use below command:
 ```
 HOME-pairwise 	-t [CG/CHG/CHH/CHN/CNN]	 -i [sample_file_fullpath] -wrt cnt	-o [output_directorypath]
-
+```
+*NOTE: more than one sample name can also be provided by -wrt, seperated by space*
 
 **Output format**
 
