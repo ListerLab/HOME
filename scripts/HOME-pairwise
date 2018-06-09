@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Apr 26 19:05:38 2017
+Created on Mon Apr 16 12:15:36 2018
 
 @author: akanksha
 """
@@ -56,7 +56,9 @@ def main(c):
             df_path.append(o.outputpath+'/temp_HOME/'+sample_name1+"_format_{c}.txt".format(c=c))  
         dictionary_new = OrderedDict(zip(sample_name_temp,df_path))
         result_list = map(OrderedDict, itertools.combinations(dictionary_new.iteritems(), 2))
-         
+        if o.withrespectto is not None:
+            result_list=[iii for iii in result_list if iii.keys()[0] in o.withrespectto] 
+        iii=0    
         for iii in result_list:
      
             input_file1= iii[iii.keys()[0]]
@@ -243,6 +245,7 @@ parser.add_argument('-d','--delta', help='minimum average difference in methylat
 parser.add_argument('-prn','--prunningC', help='number of Cs required for prunning', required=False, type=int,default=3)
 parser.add_argument('-ns','--numsamples', help='number of samples to use for pairwise DMR calling', required=False, type=int)
 parser.add_argument('-sp','--startposition', help='start position of samples to use for pairwise DMR calling', required=False, type=int)
+parser.add_argument('-wrt','--withrespectto', help='samples to use for DMR calling for pairwise comparision with respect to specific samples', nargs='*',required=False, type=str)
 if __name__ == "__main__":
     
     
@@ -411,7 +414,6 @@ if __name__ == "__main__":
     tr=o.pruncutoff
     minlen=o.minlength
     
-    
     dis_thres=o.mergedist
     ncb=o.numcb
     mc=o.minc
@@ -434,6 +436,8 @@ if __name__ == "__main__":
     merge = functools.partial(pd.merge, how='inner', on=['chr','pos',"strand","type"])
     dictionary = OrderedDict(zip(list(samplenames),list(input_files)))
     comb_samples=itertools.combinations(list(samplenames), 2)
+    if o.withrespectto is not None:
+        comb_samples=[coms for coms in comb_samples if coms[0] in o.withrespectto]
     for i in comb_samples:
             
             os.makedirs(o.outputpath+'/HOME_pairwise_DMRs/'+i[0]+"_VS_"+i[1])
