@@ -36,6 +36,9 @@ def format_allc(df,classes):
 
         filter_col = [col for col in list(df) if col.startswith(('chr','pos','mc','h'))]
         df=df[filter_col]
+        df=df.reset_index(drop=True)
+        filter_col = [col for col in list(df) if col.startswith(('h'))]
+        df=df[(df[filter_col]> 0).all(axis=1)]
         df=df.reset_index(drop=True)        
       
    return df
