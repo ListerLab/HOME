@@ -6,6 +6,21 @@ from sklearn import preprocessing
 #from sklearn.externals import joblib
 import statsmodels.stats.proportion as sm
 
+def fill_na(df_file):
+    filter_col = [col for col in list(df_file) if col.startswith(('mc'))]
+    filter_col1 = [col for col in list(df_file) if col.startswith(('h'))]
+    df=df_file[filter_col]
+    df=df.bfill(axis=1).ffill(axis=1)
+    df_file[filter_col]
+    df_file[filter_col]=df
+    df_file[filter_col]=df_file[filter_col].astype(int)
+    
+    df=df_file[filter_col1]
+    df=df.bfill(axis=1).ffill(axis=1)
+    df_file[filter_col1]=df
+    df_file[filter_col1]=df_file[filter_col1].astype(int)
+    return df_file
+
 def format_allc(df,classes):
    if classes=="CG":
         filter_col = [col for col in list(df) if col.startswith(('chr',"strand",'pos','mc','h'))]

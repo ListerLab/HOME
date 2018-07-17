@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 """
 Created on Mon Apr 16 12:15:36 2018
@@ -8,7 +9,7 @@ Created on Mon Apr 16 12:15:36 2018
 import argparse 
 import numpy as np
 import os
-import glob
+from collections import Counter
 import subprocess 
 import  itertools
 import sys
@@ -29,8 +30,9 @@ def remEmptyDir(mypath):
              if not os.listdir(fname): #to check wither the dir is empty
                  
                  os.removedirs(fname)
-def main(c):
+def main(c,nop):
     try: 
+        
         df_path=[]
         sample_name_temp=[]
         for i in xrange(len(dictionary)):
@@ -46,11 +48,17 @@ def main(c):
                 
                 count=count+1
                 c1=["chr", "pos", "strand", "type", "mc"+"_rep"+str(count), "h"+"_rep"+str(count)]
+                
                 d_rep[count]=pd.read_table(j+'/'+c+'.tsv',header=None,names=c1)
-                
-            val.append(functools.reduce(merge, d_rep.values()))            
-                
-            df=functools.reduce(merge, val)
+            if Keepall==True: 
+                val.append(functools.reduce(mergeo, d_rep.values())) 
+                df=functools.reduce(merge, val)
+                df.pos=df.pos.astype(int)
+                df=ho.fill_na(df)   
+            else:    
+                val.append(functools.reduce(merge, d_rep.values()))            
+                df=functools.reduce(merge, val)         
+            
             df=df.sort_values(['pos'])
             df.to_csv(o.outputpath+'/temp_HOME/'+sample_name1+"_format_{c}.txt".format(c=c),header=True, index=False,sep='\t')    
             df_path.append(o.outputpath+'/temp_HOME/'+sample_name1+"_format_{c}.txt".format(c=c))  
@@ -60,166 +68,196 @@ def main(c):
             result_list=[iii for iii in result_list if iii.keys()[0] in o.withrespectto] 
         iii=0    
         for iii in result_list:
-     
+            
             input_file1= iii[iii.keys()[0]]
             input_file2=iii[iii.keys()[1]]
-            sample_name1=iii.keys()[0]
-            sample_name2=iii.keys()[1]
-            dfa=pd.read_table(str(input_file1),header=0)
-            dfb=pd.read_table(str(input_file2),header=0)
-            ra=dfa.shape[1]-4
-            rb=dfb.shape[1]-4
-    
-            p_mc=3
-            p_h=4
-            for i in range(1,((ra)/2)+1):
-                
-                dfa.rename(columns={dfa.columns[i+p_mc]:"mc_cont_rep"+str(i)}, inplace = True)
-                dfa.rename(columns={dfa.columns[i+p_h]:"h_cont"+"_rep"+str(i)}, inplace = True)
-                p_mc=p_mc+1
-                p_h=p_h+1
-                
-            p_mc=3
-            p_h=4    
-            for i in range(1,((rb)/2)+1):
-               
-                dfb.rename(columns={dfb.columns[i+p_mc]:"mc_case"+"_rep"+str(i)}, inplace = True)
-                dfb.rename(columns={dfb.columns[i+p_h]:"h_case"+"_rep"+str(i)}, inplace = True)
-                p_mc=p_mc+1
-                p_h=p_h+1
-      
-            df = pd.merge(dfa, dfb, how='inner', on=['chr','pos',"strand","type"])
-            df=df.sort_values(['pos'])
-            df1=ho.format_allc(df, classes)
             
-            del(df) 
-    
-            if min(numreps)>1 and max(numreps)>1:
-           
-                CHUNKSIZE = int(len(df1)/nop)
-                CHUNKSIZE_list=[CHUNKSIZE]*nop 
-                extra=(len(df1)%nop)
-                
-                if extra> 0:
+            if (len(input_file1)!=0 and len(input_file2)!=0):
+                sample_name1=iii.keys()[0]
+                sample_name2=iii.keys()[1]
+                dfa=pd.read_table(str(input_file1),header=0)
+                dfb=pd.read_table(str(input_file2),header=0)
+                ra=dfa.shape[1]-4
+                rb=dfb.shape[1]-4
+        
+                p_mc=3
+                p_h=4
+                for i in range(1,((ra)/2)+1):
                     
-                    CHUNKSIZE_list[-1]=CHUNKSIZE_list[-1]+extra
+                    dfa.rename(columns={dfa.columns[i+p_mc]:"mc_cont_rep"+str(i)}, inplace = True)
+                    dfa.rename(columns={dfa.columns[i+p_h]:"h_cont"+"_rep"+str(i)}, inplace = True)
+                    p_mc=p_mc+1
+                    p_h=p_h+1
                     
-                df_chunk=ho.chunker1(df1,CHUNKSIZE_list)
-                ttc=0
-                df_path=[]
-                
-                for i in df_chunk:
-                    
-                    ttc=ttc+1
-                    i.to_csv(o.outputpath+'/temp_HOME'+'/chunks/'+sample_name1+"VS"+sample_name2+"_df_{c}_{ttc}.txt".format(c=c,ttc=ttc),header=True, index=False,sep='\t')    
-                    df_path.append(o.outputpath+'/temp_HOME'+'/chunks/'+sample_name1+"VS"+sample_name2+"_df_{c}_{ttc}.txt".format(c=c,ttc=ttc))
+                p_mc=3
+                p_h=4    
+                for i in range(1,((rb)/2)+1):
                    
-                if nop>1:    
+                    dfb.rename(columns={dfb.columns[i+p_mc]:"mc_case"+"_rep"+str(i)}, inplace = True)
+                    dfb.rename(columns={dfb.columns[i+p_h]:"h_case"+"_rep"+str(i)}, inplace = True)
+                    p_mc=p_mc+1
+                    p_h=p_h+1
+          
+                df = pd.merge(dfa, dfb, how='inner', on=['chr','pos',"strand","type"])
+                if len(df)>1:
+                    df=df.sort_values(['pos'])
+                    df1=ho.format_allc(df, classes)
                     
-                    pool = multiprocessing.Pool(processes=nop)
-                    process = [pool.apply_async(ho.process_frame_withR, args=(dd,)) for dd in df_path]
-                    pool.close()
-                    pool.join()
-                    
-                    pool = multiprocessing.Pool(processes=nop)
-                    process = [pool.apply_async(ho.pval_format_withrep, args=(dd,)) for dd in df_path]
-                    pool.close()
-                    pool.join()
-    
-                    output = [p.get() for p in process]
-                    df3=pd.concat(output, ignore_index=True,axis=0)
-    
-                else:
-    
-                    ho.process_frame_withR(df_path[0])
-                    df3=ho.pval_format_withrep(df_path[0])
+                    del(df) 
+                    if len(df1)>5:
+                        
+                        if min(numreps)>1 and max(numreps)>1:
+                            nop=min(nop,len(df1))
+                            CHUNKSIZE = int(len(df1)/nop)
+                            CHUNKSIZE_list=[CHUNKSIZE]*nop 
+                            extra=(len(df1)%nop)
+                            
+                            if extra> 0:
+                                
+                                CHUNKSIZE_list[-1]=CHUNKSIZE_list[-1]+extra
+                                
+                            df_chunk=ho.chunker1(df1,CHUNKSIZE_list)
+                            ttc=0
+                            df_path=[]
+                            
+                            for i in df_chunk:
+                                
+                                ttc=ttc+1
+                                i.to_csv(o.outputpath+'/temp_HOME'+'/chunks/'+sample_name1+"VS"+sample_name2+"_df_{c}_{ttc}.txt".format(c=c,ttc=ttc),header=True, index=False,sep='\t')    
+                                df_path.append(o.outputpath+'/temp_HOME'+'/chunks/'+sample_name1+"VS"+sample_name2+"_df_{c}_{ttc}.txt".format(c=c,ttc=ttc))
+                               
+                            if nop>1:    
+                                
+                                pool = multiprocessing.Pool(processes=nop)
+                                process = [pool.apply_async(ho.process_frame_withR, args=(dd,)) for dd in df_path]
+                                pool.close()
+                                pool.join()
+                                
+                                pool = multiprocessing.Pool(processes=nop)
+                                process = [pool.apply_async(ho.pval_format_withrep, args=(dd,)) for dd in df_path]
+                                pool.close()
+                                pool.join()
                 
-                smooth_exp_val=ho.smoothing(*df3.exp_val) 
-                df3['smooth_val']=(smooth_exp_val-min(smooth_exp_val))/(max(smooth_exp_val)-min(smooth_exp_val))
-            
+                                output = [p.get() for p in process]
+                                df3=pd.concat(output, ignore_index=True,axis=0)
+                
+                            else:
+                
+                                ho.process_frame_withR(df_path[0])
+                                df3=ho.pval_format_withrep(df_path[0])
+                            
+                            smooth_exp_val=ho.smoothing(*df3.exp_val) 
+                            df3['smooth_val']=(smooth_exp_val-min(smooth_exp_val))/(max(smooth_exp_val)-min(smooth_exp_val))
+                        
+                        else:
+                        
+                            df3=ho.pval_cal_withoutrep(df1)
+                           
+                        if classes=="CG":
+                
+                            input_file_path=os.getcwd()+'/training_data/training_data_CG.txt'
+                            model_path=os.getcwd()+'/saved_model/CG/'
+                            k=ho.norm_slidingwin_predict_CG(df3,input_file_path,model_path)
+                           
+                            len_cutoff=10
+                            tr=o.pruncutoff
+                            dmrs=ho.clustandtrim_CG(k,df3,sc,tr,dis_thres,ncb,prn,len_cutoff)
+                            
+                            
+                            if len(dmrs)>=1:
+                                
+                                dmrs_filtered=ho.filterdmr(dmrs,minlen,mc,d)
+                            else: 
+            	                    print "No DMRs found for "+sample_name1+"_VS_"+sample_name2+"_{c}".format(c=c)
+            	                    continue    
+    #                          
+                        elif classes=="CHG" or classes=="CHH" or classes=="CHN" or classes=="CNN":
+                   
+                            input_file_path=os.getcwd()+'/training_data/training_data_nonCG.txt'
+                            
+                            model_path=os.getcwd()+'/saved_model/nonCG/'
+                            if (nop>1 and nop<len(df3)):
+                                CHUNKSIZE = int(len(df3)/nop)
+                                df_chunk=ho.chunker(df3,CHUNKSIZE)
+                                pool = multiprocessing.Pool(processes=nop)
+                                
+                                process = [pool.apply_async(ho.norm_slidingwin_predict_nonCG, args=(dd,input_file_path,model_path)) for dd in df_chunk]
+                                
+                                pool.close()
+                                pool.join()
+                                output = [p.get() for p in process]
+                                k=pd.concat(output, ignore_index=True,axis=0)
+                            else:    
+                                k=ho.norm_slidingwin_predict_nonCG_withoutchunk(df3,input_file_path,model_path)
+                            
+                            len_cutoff=2
+                            k["meth_case"]=df3.meth_case
+                            k["meth_cont"]=df3.meth_cont
+                            k["meth_diff"]=df3.meth_diff
+                            k["h_cont"]=df3.h_cont
+                            k["h_case"]=df3.h_case
+                            del(df3)
+                            if (nop>1 and nop<len(k)):
+                                CHUNKSIZE = int(len(k)/nop)
+                                CHUNKSIZE_list=[CHUNKSIZE]*nop 
+                                extra=(len(k)%nop)
+                                
+                                if extra> 0:
+                                    CHUNKSIZE_list[-1]=CHUNKSIZE_list[-1]+extra
+                                df_chunk=ho.chunker1(k,CHUNKSIZE_list)
+                                
+                                pool = multiprocessing.Pool(processes=nop)
+                                process = [pool.apply_async(ho.clustandtrim_nonCG1, args=(dd,sc)) for dd in df_chunk]
+                                pool.close()
+                                pool.join()
+                                output = [p.get() for p in process]
+                                
+                                pre_dmr=pd.concat(output, ignore_index=True,axis=0)
+                                if len(pre_dmr)>=1:
+                                    df_split=ho.splitlist(k,pre_dmr,nop,dis_thres)
+                                else: 
+                	                    print "No DMRs found for "+sample_name1+"_VS_"+sample_name2+"_{c}".format(c=c)
+                	                    continue
+                                
+                                del(pre_dmr,k)
+                                   
+                                pool = multiprocessing.Pool(processes=nop)
+                                process = [pool.apply_async(ho.clustandtrim_nonCG2, args=(ddd,dd,dis_thres,ncb,len_cutoff)) for dd,ddd in df_split]
+                                pool.close()
+                                pool.join()
+                                output = [p.get() for p in process]
+                                
+                                dmrs=pd.concat(output, ignore_index=True,axis=0)
+                            else:
+                                pre_dmr=ho.clustandtrim_nonCG1(k,sc)
+                                if len(pre_dmr)>=1:
+                                    dmrs=ho.clustandtrim_nonCG2(k,pre_dmr,dis_thres,ncb,len_cutoff)
+                                else: 
+                	                    print "No DMRs found for "+sample_name1+"_VS_"+sample_name2+"_{c}".format(c=c)
+                	                    continue
+                            if len(dmrs)>=1:
+                                
+                                dmrs_filtered=ho.filterdmr_nonCG(dmrs,minlen,mc,d) 
+                            else: 
+            	                    print "No DMRs found for "+sample_name1+"_VS_"+sample_name2+"_{c}".format(c=c)
+            	                    continue     
+                            
+                            
+                        if len(dmrs_filtered)>=1: 
+                            
+                            dmr_final=pd.concat([df1.chr[0:len(dmrs_filtered)],dmrs_filtered],axis=1)
+                            dmr_final['chr'] = dmr_final['chr'].astype(str)
+                            dmr_final.to_csv(o.outputpath+'/HOME_pairwise_DMRs/'+sample_name1+"_VS_"+sample_name2+"/HOME_DMRs_{c}.txt".format(c=c),header=True, index=False,sep='\t')
+                            print "DMRs for "+sample_name1+"_VS_"+sample_name2+"_{c} done".format(c=c)
+                            
+                        elif len(dmrs_filtered)<1: 
+                            print "No DMRs found for "+sample_name1+"_VS_"+sample_name2+"_{c}".format(c=c)
+                    else: 
+                        print "No DMRs found for "+sample_name1+"_VS_"+sample_name2+"_{c}".format(c=c)
+                else: 
+                    print "No DMRs found for {c} as no similar positions are observed in the files".format(c=c) 
             else:
-            
-                df3=ho.pval_cal_withoutrep(df1)
-               
-            if classes=="CG":
-    
-                input_file_path=os.getcwd()+'/training_data/training_data_CG.txt'
-                model_path=os.getcwd()+'/saved_model/CG/'
-                k=ho.norm_slidingwin_predict_CG(df3,input_file_path,model_path)
-                len_cutoff=10
-                tr=o.pruncutoff
-                dmrs=ho.clustandtrim_CG(k,df3,sc,tr,dis_thres,ncb,prn,len_cutoff)
-                dmrs_filtered=ho.filterdmr(dmrs,minlen,mc,d)
-            elif classes=="CHG" or classes=="CHH" or classes=="CHN" or classes=="CNN":
-       
-                input_file_path=os.getcwd()+'/training_data/training_data_nonCG.txt'
-                
-                model_path=os.getcwd()+'/saved_model/nonCG/'
-                if nop>1:
-                    CHUNKSIZE = int(len(df3)/nop)
-                    df_chunk=ho.chunker(df3,CHUNKSIZE)
-                    pool = multiprocessing.Pool(processes=nop)
-                    
-                    process = [pool.apply_async(ho.norm_slidingwin_predict_nonCG, args=(dd,input_file_path,model_path)) for dd in df_chunk]
-                    
-                    pool.close()
-                    pool.join()
-                    output = [p.get() for p in process]
-                    k=pd.concat(output, ignore_index=True,axis=0)
-                else:    
-                    k=ho.norm_slidingwin_predict_nonCG_withoutchunk(df3,input_file_path,model_path)
-      
-                len_cutoff=2
-                k["meth_case"]=df3.meth_case
-                k["meth_cont"]=df3.meth_cont
-                k["meth_diff"]=df3.meth_diff
-                k["h_cont"]=df3.h_cont
-                k["h_case"]=df3.h_case
-                del(df3)
-                if nop>1:
-                    CHUNKSIZE = int(len(k)/nop)
-                    CHUNKSIZE_list=[CHUNKSIZE]*nop 
-                    extra=(len(k)%nop)
-                    
-                    if extra> 0:
-                        CHUNKSIZE_list[-1]=CHUNKSIZE_list[-1]+extra
-                    df_chunk=ho.chunker1(k,CHUNKSIZE_list)
-                    
-                    pool = multiprocessing.Pool(processes=nop)
-                    process = [pool.apply_async(ho.clustandtrim_nonCG1, args=(dd,sc)) for dd in df_chunk]
-                    pool.close()
-                    pool.join()
-                    output = [p.get() for p in process]
-                    
-                    pre_dmr=pd.concat(output, ignore_index=True,axis=0)
-                    
-                    df_split=ho.splitlist(k,pre_dmr,nop,dis_thres)
-                    del(pre_dmr,k)
-                       
-                    pool = multiprocessing.Pool(processes=nop)
-                    process = [pool.apply_async(ho.clustandtrim_nonCG2, args=(ddd,dd,dis_thres,ncb,len_cutoff)) for dd,ddd in df_split]
-                    pool.close()
-                    pool.join()
-                    output = [p.get() for p in process]
-                    
-                    dmrs=pd.concat(output, ignore_index=True,axis=0)
-                else:
-                    pre_dmr=ho.clustandtrim_nonCG1(k,sc)
-                    
-                    dmrs=ho.clustandtrim_nonCG2(k,pre_dmr,dis_thres,ncb,len_cutoff)
-                    
-                dmrs_filtered=ho.filterdmr_nonCG(dmrs,minlen,mc,d) 
-                
-            if len(dmrs_filtered)>=1: 
-                
-                dmr_final=pd.concat([df1.chr[0:len(dmrs_filtered)],dmrs_filtered],axis=1)
-                dmr_final['chr'] = dmr_final['chr'].astype(str)
-                dmr_final.to_csv(o.outputpath+'/HOME_pairwise_DMRs/'+sample_name1+"_VS_"+sample_name2+"/HOME_DMRs_{c}.txt".format(c=c),header=True, index=False,sep='\t')
-                print "DMRs for "+sample_name1+"_VS_"+sample_name2+"_{c} done".format(c=c)
-                
-            elif len(dmrs_filtered)<1: 
-                print "No DMRs found for "+sample_name1+"_VS_"+sample_name2+"_{c}".format(c=c)
-                
+                print "No DMRs found for {c} as file does not exit".format(c=c) 
         return 
            
     except Exception as e:
@@ -246,6 +284,7 @@ parser.add_argument('-prn','--prunningC', help='number of Cs required for prunni
 parser.add_argument('-ns','--numsamples', help='number of samples to use for pairwise DMR calling', required=False, type=int)
 parser.add_argument('-sp','--startposition', help='start position of samples to use for pairwise DMR calling', required=False, type=int)
 parser.add_argument('-wrt','--withrespectto', help='samples to use for DMR calling for pairwise comparision with respect to specific samples', nargs='*',required=False, type=str)
+parser.add_argument('-Keepall','--Keepall',  help='Keep all cytosine positions present among replicates',action='store_true',default=False)
 if __name__ == "__main__":
     
     
@@ -265,7 +304,7 @@ if __name__ == "__main__":
     else:
         
         ns=len(o.samplefilepath)
-        
+    Keepall=o.Keepall     
     BSSeeker2=o.BSSeeker2
     df_file=pd.read_table(o.samplefilepath,header=None)
     samplenames=df_file.iloc[sp:sp+ns,0]
@@ -395,8 +434,10 @@ if __name__ == "__main__":
           input_files_mod.append(temp_file)        
     input_files=input_files_mod
     del(input_files_mod,temp_file)
-    s=[ os.path.splitext(os.path.basename(x))[0] for x in glob.glob(input_files[0][0]+'/*.tsv')]
-     
+    #s=[ os.path.splitext(os.path.basename(x))[0] for x in glob.glob(input_files[0][0]+'/*.tsv')]
+    s=[f.split('.')[0] for dp, dn, filenames in os.walk(o.outputpath+'/temp_HOME') for f in filenames if os.path.splitext(f)[1] == '.tsv']
+    s = Counter(s)
+    s=[kv for kv, v in s.iteritems() if v > 1]
     os.chdir(cwd)  
     
       
@@ -432,7 +473,7 @@ if __name__ == "__main__":
         sys.exit('error: cannot handle 1 replicate in 1 group and more than 1 in other')
     
     pd.options.mode.chained_assignment = None
-     
+    mergeo = functools.partial(pd.merge, how='outer', on=['chr','pos',"strand","type"])  
     merge = functools.partial(pd.merge, how='inner', on=['chr','pos',"strand","type"])
     dictionary = OrderedDict(zip(list(samplenames),list(input_files)))
     comb_samples=itertools.combinations(list(samplenames), 2)
@@ -453,7 +494,7 @@ if __name__ == "__main__":
         
     
                 for dx in s:
-                   main(dx)
+                   main(dx,nop)
                 shutil.rmtree(o.outputpath+'/temp_HOME', ignore_errors=True)
                 print "Congratulations the DMRs are ready" 
                 remEmptyDir(o.outputpath+'/HOME_DMRs/')
@@ -462,7 +503,7 @@ if __name__ == "__main__":
         elif npp>1:
           
                 pool1= multiprocessing.Pool(processes=npp)
-                process=[pool1.apply_async(main, args=(dx,)) for dx in s]
+                process=[pool1.apply_async(main, args=(dx,nop)) for dx in s]
                 output = [p.get() for p in process]
                 pool1.close()
                 print "Congratulations the DMRs are ready"
