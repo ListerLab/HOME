@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Aug 27 13:44:13 2017
-
-@author: akanksha
-"""
 
 # -*- coding: utf-8 -*-
 """
@@ -55,9 +49,14 @@ def main(c):
                 c1=["chr", "pos", "strand", "type", "mc"+"_rep"+str(count), "h"+"_rep"+str(count)]
                 d_rep[count]=pd.read_table(j+'/'+c+'.tsv',header=None,names=c1)
                 
-            val.append(functools.reduce(merge, d_rep.values()))            
-                
-            df=functools.reduce(merge, val)
+            if Keepall==True: 
+                val.append(functools.reduce(mergeo, d_rep.values())) 
+                df=functools.reduce(merge, val)
+                df.pos=df.pos.astype(int)
+                df=ho.fill_na(df)
+            else:    
+                val.append(functools.reduce(merge, d_rep.values()))            
+                df=functools.reduce(merge, val)
             df=df.sort_values(['pos'])
             df.to_csv(o.outputpath+'/temp_HOME/'+sample_name1+"_format_{c}.txt".format(c=c),header=True, index=False,sep='\t')    
             df_path.append(o.outputpath+'/temp_HOME/'+sample_name1+"_format_{c}.txt".format(c=c))  
@@ -272,12 +271,12 @@ parser.add_argument('-npp','--numprocess', help='number of process to be run at 
 parser.add_argument('-sc','--scorecutoff',  help='min classifier score required to cluster the DMR',choices=np.arange(0,1,0.1), required=False, type=float,default=0.5)
 parser.add_argument('-ml','--minlength', help='minimum length of DMRs to be reported', required=False, type=int,default=10)
 parser.add_argument('-sin','--singlechrom',  help='parallel for single chromosomes',action='store_true',default=False)
-parser.add_argument('-ns','--numsamples', help='number of samples to use for pairwise DMR calling', required=False, type=int)
-parser.add_argument('-sp','--startposition', help='start position of samples to use for pairwise DMR calling', required=False, type=int)
+parser.add_argument('-ns','--numsamples', help='number of samples to use for timeseries DMR calling', required=False, type=int)
+parser.add_argument('-sp','--startposition', help='start position of samples to use for timeseries DMR calling', required=False, type=int)
 parser.add_argument('-BSSeeker2','--BSSeeker2',  help='input CGmap file from BS-Seeker2',action='store_true',default=False)
 parser.add_argument('-mc','--minc', help='minimum number of C in a DMR to reported', required=False, type=int,default=4)
 parser.add_argument('-d','--delta', help='minimum average difference in methylation required', required=False, type=float,default=0.1)
-
+parser.add_argument('-Keepall','--Keepall',  help='Keep all cytosine positions present in atleast one replicate',action='store_true',default=False)
 if __name__ == "__main__":
     
     
@@ -297,7 +296,7 @@ if __name__ == "__main__":
     else:
         
         ns=len(o.samplefilepath)
-        
+    Keepall=o.Keepall    
     BSSeeker2=o.BSSeeker2
     df_file=pd.read_table(o.samplefilepath,header=None)
     samplenames=df_file.iloc[sp:sp+ns,0]
@@ -460,7 +459,7 @@ if __name__ == "__main__":
         sys.exit('error: cannot handle 1 replicate in 1 group and more than 1 in other')
     
     pd.options.mode.chained_assignment = None
-     
+    mergeo = functools.partial(pd.merge, how='outer', on=['chr','pos',"strand","type"])  
     merge = functools.partial(pd.merge, how='inner', on=['chr','pos',"strand","type"])
     dictionary = OrderedDict(zip(list(samplenames),list(input_files)))
     comb_samples=itertools.combinations(list(samplenames), 2)

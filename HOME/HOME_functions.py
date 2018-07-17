@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 """
 Created on Wed Apr 26 19:06:05 2017
@@ -13,6 +14,20 @@ from sklearn import preprocessing
 #from sklearn.externals import joblib
 import statsmodels.stats.proportion as sm
 
+def fill_na(df_file):
+    filter_col = [col for col in list(df_file) if col.startswith(('mc'))]
+    filter_col1 = [col for col in list(df_file) if col.startswith(('h'))]
+    df=df_file[filter_col]
+    df=df.bfill(axis=1).ffill(axis=1)
+    df_file[filter_col]
+    df_file[filter_col]=df
+    df_file[filter_col]=df_file[filter_col].astype(int)
+    
+    df=df_file[filter_col1]
+    df=df.bfill(axis=1).ffill(axis=1)
+    df_file[filter_col1]=df
+    df_file[filter_col1]=df_file[filter_col1].astype(int)
+    return df_file
 
 def format_allc(df,classes):
    if classes=="CG":
@@ -30,7 +45,7 @@ def format_allc(df,classes):
         df=df_mod.groupby(by=['pos']).sum().reset_index()
         df.insert(0,'chr',v)
         filter_col = [col for col in list(df) if col.startswith(('h'))]
-        df=df[(df[filter_col]> 2).all(axis=1)]
+        df=df[(df[filter_col]> 0).all(axis=1)]
         df=df.reset_index(drop=True)
    elif classes=="CHN" or classes=="CHG" or classes=="CHH" or classes=="CNN":
 
@@ -70,6 +85,7 @@ def pval_cal_withoutrep(df):
     scaled_smooth_exp_val=(smooth_exp_val-min(smooth_exp_val))/(max(smooth_exp_val)-min(smooth_exp_val))
     
     df1=pd.concat([df, pd.DataFrame({"exp_val":scaled_exp_val}),pd.DataFrame({"smooth_val":scaled_smooth_exp_val})], axis=1)
+    df1=df1.fillna(0)  
     return df1
 def chunker1(seq, sizes):
  idx=0
@@ -127,7 +143,7 @@ def pval_format_withrep(df_path):
     hh=mod_pval.apply(np.exp)
     df['exp_val']=h.multiply(hh)
     df['scaled_exp_val']=(df.exp_val-df.exp_val.min())/(df.exp_val.max()-df.exp_val.min())
-    
+    df=df.fillna(0) 
     return df
     
 def smoothing(*a):
@@ -338,153 +354,156 @@ def clustandtrim_CG(k,df1,sc,tr,dis_thres,ncb,prn,len_cutoff):
     dmr_start=[]
     dmr_stop=[]
     m=0
-    for i in xrange(len(final_dmrs)-1):
+    if len(final_dmrs)>1:
+        for i in xrange(len(final_dmrs)-1):
+            
+           start=final_dmrs.dmr_stop[i]
+           stop=final_dmrs.dmr_start[i+1]
+           start_indx=df1.pos[df1.pos==start].index[0]
+           stop_indx=df1.pos[df1.pos==stop].index[0]
+           no_c=((stop_indx-start_indx)-1)
+           dmr_dis=stop-start
+           k_start=k.pos[k.pos==start].index[0]
+           k_stop=k.pos[k.pos==stop].index[0]
+           mean_score=np.mean(k.glm_predicted_values[k_start:k_stop+1])
+           if dmr_dis>dis_thres:
+               new_dmr_start=final_dmrs.dmr_start[i-m]
+               new_dmr_stop=final_dmrs.dmr_stop[i]
+               m=0
+               
+               dmr_start.append(int(new_dmr_start))
+               dmr_stop.append(int(new_dmr_stop))
+           elif final_dmrs.win_sign[i]!=final_dmrs.win_sign[i+1]:
+               new_dmr_start=final_dmrs.dmr_start[i-m]
+               new_dmr_stop=final_dmrs.dmr_stop[i]
+               m=0
+               
+               dmr_start.append(int(new_dmr_start))
+               dmr_stop.append(int(new_dmr_stop))    
+           elif dmr_dis<dis_thres and no_c>ncb and mean_score<score_thres:
+               new_dmr_start=final_dmrs.dmr_start[i-m]
+               new_dmr_stop=final_dmrs.dmr_stop[i]
+               m=0
+               
+               dmr_start.append(int(new_dmr_start))
+               dmr_stop.append(int(new_dmr_stop))    
+           else:
+                m=m+1
+        if m!=1:
+             dmr_start.append(int(final_dmrs.dmr_start[-1:]))
+             dmr_stop.append(int(final_dmrs.dmr_stop[-1:])) 
+        dmr_start=pd.DataFrame(dmr_start,columns=['dmr_start'],dtype='int')
+        dmr_stop=pd.DataFrame(dmr_stop,columns=['dmr_stop'],dtype='int')     
+        final_dmrs=pd.concat([dmr_start,dmr_stop],axis=1) 
+        dmr_start=[]
+        dmr_stop=[]
+        win=False
+        no_c=[]
+        status=[]
+        comb_diff=[]
+        coverage_sample1=[]
+        coverage_sample2=[]
         
-       start=final_dmrs.dmr_stop[i]
-       stop=final_dmrs.dmr_start[i+1]
-       start_indx=df1.pos[df1.pos==start].index[0]
-       stop_indx=df1.pos[df1.pos==stop].index[0]
-       no_c=((stop_indx-start_indx)-1)
-       dmr_dis=stop-start
-       k_start=k.pos[k.pos==start].index[0]
-       k_stop=k.pos[k.pos==stop].index[0]
-       mean_score=np.mean(k.glm_predicted_values[k_start:k_stop+1])
-       if dmr_dis>dis_thres:
-           new_dmr_start=final_dmrs.dmr_start[i-m]
-           new_dmr_stop=final_dmrs.dmr_stop[i]
-           m=0
-           
-           dmr_start.append(int(new_dmr_start))
-           dmr_stop.append(int(new_dmr_stop))
-       elif final_dmrs.win_sign[i]!=final_dmrs.win_sign[i+1]:
-           new_dmr_start=final_dmrs.dmr_start[i-m]
-           new_dmr_stop=final_dmrs.dmr_stop[i]
-           m=0
-           
-           dmr_start.append(int(new_dmr_start))
-           dmr_stop.append(int(new_dmr_stop))    
-       elif dmr_dis<dis_thres and no_c>ncb and mean_score<score_thres:
-           new_dmr_start=final_dmrs.dmr_start[i-m]
-           new_dmr_stop=final_dmrs.dmr_stop[i]
-           m=0
-           
-           dmr_start.append(int(new_dmr_start))
-           dmr_stop.append(int(new_dmr_stop))    
-       else:
-            m=m+1
-    if m!=1:
-         dmr_start.append(int(final_dmrs.dmr_start[-1:]))
-         dmr_stop.append(int(final_dmrs.dmr_stop[-1:])) 
-    dmr_start=pd.DataFrame(dmr_start,columns=['dmr_start'],dtype='int')
-    dmr_stop=pd.DataFrame(dmr_stop,columns=['dmr_stop'],dtype='int')     
-    final_dmrs=pd.concat([dmr_start,dmr_stop],axis=1) 
-    dmr_start=[]
-    dmr_stop=[]
-    win=False
-    no_c=[]
-    status=[]
-    comb_diff=[]
-    coverage_sample1=[]
-    coverage_sample2=[]
+        file_idx=0
+        start=0
+        stop=0
+        for i in xrange(len(final_dmrs)):  
+            start=final_dmrs.dmr_start[i]
+            stop=final_dmrs.dmr_stop[i]
+            win1=False
+            pos=[]
+            value=[]
+            s=0
+            p=0
+       
+            for j in xrange(file_idx,len(df1)):
     
-    file_idx=0
-    start=0
-    stop=0
-    for i in xrange(len(final_dmrs)):  
-        start=final_dmrs.dmr_start[i]
-        stop=final_dmrs.dmr_stop[i]
-        win1=False
-        pos=[]
-        value=[]
-        s=0
-        p=0
-   
-        for j in xrange(file_idx,len(df1)):
-
-            if df1.pos[j]>=start and df1.pos[j]<=stop:
-               
-               if win1==False:
-                  file_idx=j
-                  win1=True
-               pos.append(df1.pos[j])
-
-               val=df1.exp_val[j]
-               
-               value.append(val)
-            elif df1.pos[j]>stop:
-           
-                if len(value)>2 :
-                   p=len(value)-1
-                   while any(t <tr for t in value[s:s+prn]):
-                   #while any(t <tr for t in value[s:s+1]):
-                     if  s==p:
-                         s=p
-                         break
-                     else:
-                         s=s+1
-                
-                   cg_start=pos[s]
-                
-                   while any(t <tr for t in value[p-(prn-1):p+1]):
-                   #while any(t <tr for t in value[p:p+1]):    
-                       if p==(prn-1):
-                       #if p==1:
-                           p=len(value)-1
-                           break
-                       else:
-                          p=p-1
-                
-                   cg_stop=pos[p]
+                if df1.pos[j]>=start and df1.pos[j]<=stop:
                    
-                   if (cg_stop-cg_start)>=len_cutoff:
-                       p_start=df1[df1.pos==cg_start].index
-                       p_stop=df1[df1.pos==cg_stop].index
-                       dif=df1.meth_diff[p_start[0]:p_stop[0]]
+                   if win1==False:
+                      file_idx=j
+                      win1=True
+                   pos.append(df1.pos[j])
+    
+                   val=df1.exp_val[j]
+                   
+                   value.append(val)
+                elif df1.pos[j]>stop:
+               
+                    if len(value)>2 :
+                       p=len(value)-1
+                       while any(t <tr for t in value[s:s+prn]):
+                       #while any(t <tr for t in value[s:s+1]):
+                         if  s==p:
+                             s=p
+                             break
+                         else:
+                             s=s+1
+                    
+                       cg_start=pos[s]
+                    
+                       while any(t <tr for t in value[p-(prn-1):p+1]):
+                       #while any(t <tr for t in value[p:p+1]):    
+                           if p==(prn-1):
+                           #if p==1:
+                               p=len(value)-1
+                               break
+                           else:
+                              p=p-1
+                    
+                       cg_stop=pos[p]
                        
-                       coverage_cont=np.median(df1.h_cont[p_start[0]:p_stop[0]])
-                       coverage_case=np.median(df1.h_case[p_start[0]:p_stop[0]])
-                       total_meth_case=df1.meth_case[p_start[0]:p_stop[0]]
-                       avg_meth_case=total_meth_case.sum()/(len(total_meth_case))
-                       total_meth_cont=df1.meth_cont[p_start[0]:p_stop[0]]
-                       avg_meth_cont=total_meth_cont.sum()/(len(total_meth_cont))
-                       delta_diff=avg_meth_cont-avg_meth_case
-                       dif=dif.abs()
-                      
-                       start_indx=k.pos[k.pos==cg_start].index[0]
-                       stop_indx=k.pos[k.pos==cg_stop].index[0]
-                       win_sign=k.win_sign[start_indx:stop_indx+1]
-                       no_c.append(len(win_sign))
-
-                       if np.sign(delta_diff)==-1:
-                           status_win="hypo"
-                       if np.sign(delta_diff)==1:
-                           status_win="hyper"
-                       if np.sign(delta_diff)==0:
-                           status_win="hemi"    
-                       status.append(status_win)
-                       dmr_start.append(cg_start)
-                       dmr_stop.append(cg_stop)
-                       comb_diff.append(delta_diff) 
-                       mean_diff_case.append(avg_meth_case)
-                       mean_diff_cont.append(avg_meth_cont)
-                       coverage_sample1.append(coverage_cont)
-                       coverage_sample2.append(coverage_case)
-                break 
-    mean_diff_case=pd.DataFrame(mean_diff_case,columns=['mean_Meth2'],dtype='float')
-    mean_diff_cont=pd.DataFrame(mean_diff_cont,columns=['mean_Meth1'],dtype='float')              
-    comb_diff=pd.DataFrame(comb_diff,columns=['delta'],dtype='float')
-    dmr_start=pd.DataFrame(dmr_start,columns=['start'],dtype='int')
-    dmr_stop=pd.DataFrame(dmr_stop,columns=['end'],dtype='int')
-    status_dmr=pd.DataFrame(status,columns=['status'],dtype='str')
-    number_of_Cs=pd.DataFrame(no_c,columns=['numC'],dtype='int')
-    avg_number_of_Cs_sample1=pd.DataFrame(coverage_sample1,columns=['avg_coverage1'],dtype='int')
-    avg_number_of_Cs_sample2=pd.DataFrame(coverage_sample2,columns=['avg_coverage2'],dtype='int')
-    length=pd.DataFrame(dmr_stop.end-dmr_start.start,columns=['len'],dtype='int')
-    final_dmrs=pd.concat([dmr_start,dmr_stop,status_dmr,number_of_Cs,mean_diff_cont,mean_diff_case,comb_diff,avg_number_of_Cs_sample1,avg_number_of_Cs_sample2,length],axis=1)
-    final_dmrs=final_dmrs.loc[(final_dmrs.status != 'hemi')]
-    final_dmrs=final_dmrs.reset_index(drop=True)
-    return (final_dmrs)
-
+                       if (cg_stop-cg_start)>=len_cutoff:
+                           p_start=df1[df1.pos==cg_start].index
+                           p_stop=df1[df1.pos==cg_stop].index
+                           dif=df1.meth_diff[p_start[0]:p_stop[0]]
+                           
+                           coverage_cont=np.median(df1.h_cont[p_start[0]:p_stop[0]])
+                           coverage_case=np.median(df1.h_case[p_start[0]:p_stop[0]])
+                           total_meth_case=df1.meth_case[p_start[0]:p_stop[0]]
+                           avg_meth_case=total_meth_case.sum()/(len(total_meth_case))
+                           total_meth_cont=df1.meth_cont[p_start[0]:p_stop[0]]
+                           avg_meth_cont=total_meth_cont.sum()/(len(total_meth_cont))
+                           delta_diff=avg_meth_cont-avg_meth_case
+                           dif=dif.abs()
+                          
+                           start_indx=k.pos[k.pos==cg_start].index[0]
+                           stop_indx=k.pos[k.pos==cg_stop].index[0]
+                           win_sign=k.win_sign[start_indx:stop_indx+1]
+                           no_c.append(len(win_sign))
+    
+                           if np.sign(delta_diff)==-1:
+                               status_win="hypo"
+                           if np.sign(delta_diff)==1:
+                               status_win="hyper"
+                           if np.sign(delta_diff)==0:
+                               status_win="hemi"    
+                           status.append(status_win)
+                           dmr_start.append(cg_start)
+                           dmr_stop.append(cg_stop)
+                           comb_diff.append(delta_diff) 
+                           mean_diff_case.append(avg_meth_case)
+                           mean_diff_cont.append(avg_meth_cont)
+                           coverage_sample1.append(coverage_cont)
+                           coverage_sample2.append(coverage_case)
+                    break 
+        mean_diff_case=pd.DataFrame(mean_diff_case,columns=['mean_Meth2'],dtype='float')
+        mean_diff_cont=pd.DataFrame(mean_diff_cont,columns=['mean_Meth1'],dtype='float')              
+        comb_diff=pd.DataFrame(comb_diff,columns=['delta'],dtype='float')
+        dmr_start=pd.DataFrame(dmr_start,columns=['start'],dtype='int')
+        dmr_stop=pd.DataFrame(dmr_stop,columns=['end'],dtype='int')
+        status_dmr=pd.DataFrame(status,columns=['status'],dtype='str')
+        number_of_Cs=pd.DataFrame(no_c,columns=['numC'],dtype='int')
+        avg_number_of_Cs_sample1=pd.DataFrame(coverage_sample1,columns=['avg_coverage1'],dtype='int')
+        avg_number_of_Cs_sample2=pd.DataFrame(coverage_sample2,columns=['avg_coverage2'],dtype='int')
+        length=pd.DataFrame(dmr_stop.end-dmr_start.start,columns=['len'],dtype='int')
+        final_dmrs=pd.concat([dmr_start,dmr_stop,status_dmr,number_of_Cs,mean_diff_cont,mean_diff_case,comb_diff,avg_number_of_Cs_sample1,avg_number_of_Cs_sample2,length],axis=1)
+        final_dmrs=final_dmrs.loc[(final_dmrs.status != 'hemi')]
+        final_dmrs=final_dmrs.reset_index(drop=True)
+        return (final_dmrs)
+    else:
+        final_dmrs=[]
+        return final_dmrs
 def clustandtrim_nonCG1(k,sc):
     k.reset_index(drop=True,inplace=True)
     dmr_start=[]
@@ -537,7 +556,12 @@ def clustandtrim_nonCG1(k,sc):
     dmr_wins=pd.DataFrame(wins,columns=['win_sign'],dtype='int')
     numb_c=pd.DataFrame(num_c,columns=['numc'],dtype='int') 
     final_dmrs=pd.concat([dmr_start,dmr_stop,dmr_wins,numb_c],axis=1)
-    return (final_dmrs)
+    if len (final_dmrs)>1:
+        return (final_dmrs)
+   
+    else:
+        final_dmrs=pd.DataFrame()
+        return final_dmrs
     
     
 def splitlist(k,df,npp,dis_thres):
@@ -700,8 +724,13 @@ def clustandtrim_nonCG2(k,final_dmrs,dis_thres,ncb,len_cutoff):
     final_dmrs=pd.concat([dmr_start,dmr_stop,status_dmr,number_of_Cs,mean_diff_cont,mean_diff_case,comb_diff,avg_number_of_Cs_sample1,avg_number_of_Cs_sample2,length],axis=1)
     final_dmrs=final_dmrs.loc[(final_dmrs.status != 'hemi')]
     final_dmrs=final_dmrs.reset_index(drop=True)
-    
-    return (final_dmrs)
+    if len (final_dmrs)>1:
+        return (final_dmrs)
+   
+    else:
+        final_dmrs=pd.DataFrame()
+        return final_dmrs
+   
 def norm_slidingwin_predict_nonCG_withoutchunk(df_file,input_file_path,model_path):
      
     b=0.57559 
