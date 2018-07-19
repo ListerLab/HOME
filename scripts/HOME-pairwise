@@ -54,11 +54,14 @@ def main(c,nop):
                 val.append(functools.reduce(mergeo, d_rep.values())) 
                 df=functools.reduce(merge, val)
                 df.pos=df.pos.astype(int)
+                df.chr=df.pos.astype(str)
                 df=ho.fill_na(df)   
             else:    
                 val.append(functools.reduce(merge, d_rep.values()))            
                 df=functools.reduce(merge, val)         
-            
+            preordered = ["chr", "pos", "strand", "type"]  
+            new_cols = preordered + [co for co in df.columns if co not in preordered]
+            df=df.reindex(columns=new_cols)   
             df=df.sort_values(['pos'])
             df.to_csv(o.outputpath+'/temp_HOME/'+sample_name1+"_format_{c}.txt".format(c=c),header=True, index=False,sep='\t')    
             df_path.append(o.outputpath+'/temp_HOME/'+sample_name1+"_format_{c}.txt".format(c=c))  
@@ -147,8 +150,10 @@ def main(c,nop):
                                 df3=ho.pval_format_withrep(df_path[0])
                             
                             smooth_exp_val=ho.smoothing(*df3.exp_val) 
+                            
                             df3['smooth_val']=(smooth_exp_val-min(smooth_exp_val))/(max(smooth_exp_val)-min(smooth_exp_val))
-                        
+                            df3=df3.fillna(0) 
+                            df3.to_csv(o.outputpath+'/temp_HOME'+'/chunks/'+sample_name1+"VS"+sample_name2+"_df_{c}.txt".format(c=c),header=True, index=False,sep='\t')    
                         else:
                         
                             df3=ho.pval_cal_withoutrep(df1)
@@ -158,7 +163,7 @@ def main(c,nop):
                             input_file_path=os.getcwd()+'/training_data/training_data_CG.txt'
                             model_path=os.getcwd()+'/saved_model/CG/'
                             k=ho.norm_slidingwin_predict_CG(df3,input_file_path,model_path)
-                           
+                            
                             len_cutoff=10
                             tr=o.pruncutoff
                             dmrs=ho.clustandtrim_CG(k,df3,sc,tr,dis_thres,ncb,prn,len_cutoff)
@@ -437,7 +442,8 @@ if __name__ == "__main__":
     #s=[ os.path.splitext(os.path.basename(x))[0] for x in glob.glob(input_files[0][0]+'/*.tsv')]
     s=[f.split('.')[0] for dp, dn, filenames in os.walk(o.outputpath+'/temp_HOME') for f in filenames if os.path.splitext(f)[1] == '.tsv']
     s = Counter(s)
-    s=[kv for kv, v in s.iteritems() if v > 1]
+    coun_s=len(os.walk(o.outputpath+'/temp_HOME').next()[1])
+    s=[kv for kv, v in s.iteritems() if v == (coun_s)]
     os.chdir(cwd)  
     
       
