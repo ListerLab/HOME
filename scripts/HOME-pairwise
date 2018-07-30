@@ -54,7 +54,7 @@ def main(c,nop):
                 val.append(functools.reduce(mergeo, d_rep.values())) 
                 df=functools.reduce(merge, val)
                 df.pos=df.pos.astype(int)
-                df.chr=df.pos.astype(str)
+                df.chr=df.chr.astype(str)
                 df=ho.fill_na(df)   
             else:    
                 val.append(functools.reduce(merge, d_rep.values()))            
