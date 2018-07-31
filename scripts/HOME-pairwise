@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 """
 Created on Mon Apr 16 12:15:36 2018
@@ -50,11 +49,13 @@ def main(c,nop):
                 c1=["chr", "pos", "strand", "type", "mc"+"_rep"+str(count), "h"+"_rep"+str(count)]
                 
                 d_rep[count]=pd.read_table(j+'/'+c+'.tsv',header=None,names=c1)
+                filter_col1 = [col for col in list(d_rep[count]) if col.startswith(('h'))]
+                d_rep[count]=d_rep[count].loc[(d_rep[count][filter_col1]!=0).any(axis=1)]
             if Keepall==True: 
                 val.append(functools.reduce(mergeo, d_rep.values())) 
                 df=functools.reduce(merge, val)
                 df.pos=df.pos.astype(int)
-                df.chr=df.pos.astype(str)
+                df.chr=df.chr.astype(str)
                 df=ho.fill_na(df)   
             else:    
                 val.append(functools.reduce(merge, d_rep.values()))            
