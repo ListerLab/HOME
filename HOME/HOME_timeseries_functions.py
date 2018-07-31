@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Jul 31 11:04:30 2018
+
+@author: akanksha
+"""
+
 import pandas as pd 
 
 import numpy as np
@@ -37,12 +44,15 @@ def format_allc(df,classes):
         df=df_mod.groupby(by=['pos']).sum().reset_index()
         df.insert(0,'chr',v)
         filter_col = [col for col in list(df) if col.startswith(('h'))]
-        df=df[(df[filter_col]> 2).all(axis=1)]
+        df=df[(df[filter_col]> 0).all(axis=1)]
         df=df.reset_index(drop=True)
    elif classes=="CHN" or classes=="CHG" or classes=="CHH" or classes=="CNN":
         
         filter_col = [col for col in list(df) if col.startswith(('chr','pos','mc','h'))]
         df=df[filter_col]
+        df=df.reset_index(drop=True)
+        filter_col = [col for col in list(df) if col.startswith(('h'))]
+        df=df[(df[filter_col]> 0).all(axis=1)]
         df=df.reset_index(drop=True)        
       
    return df
