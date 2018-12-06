@@ -13,6 +13,9 @@ import numpy as np
 from sklearn import preprocessing
 #from sklearn.externals import joblib
 import statsmodels.stats.proportion as sm
+def fun_win(val):
+     t=1-(min(val,1))
+     return t 
 
 def fill_na(df_file):
     filter_col = [col for col in list(df_file) if col.startswith(('mc'))]
@@ -214,11 +217,9 @@ def norm_slidingwin_predict_CG(df_file,input_file_path,model_path):
 
             status.append(sign_win)
             val=(abs(pos_specific-pos1)/250.0)
-            wght=[]
-            for i in val:
-                t=min(i,1)
-                wght.append(1-t)
             
+            
+            wght=map(fun_win, val)
             
             bins=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
             hist,edges = np.histogram(mod_value, bins=bins,weights=wght)
@@ -269,12 +270,8 @@ def norm_slidingwin_predict_nonCG(df_file,input_file_path,model_path):
     
             status.append(sign_win)
             val=(abs(pos_specific-pos1)/10.0)
-            wght=[]
-            for i in val:
-                t=min(i,1)
-                wght.append(1-t)
+            wght=map(fun_win, val)
          
-            
             bins=np.linspace(0,1,11) 
             hist,edges = np.histogram(mod_value, bins=bins,weights=wght)
             k=float(sum(hist))
@@ -772,11 +769,7 @@ def norm_slidingwin_predict_nonCG_withoutchunk(df_file,input_file_path,model_pat
 
             status.append(sign_win)
             val=(abs(pos_specific-pos1)/10.0)
-            wght=[]
-            for i in val:
-                t=min(i,1)
-                wght.append(1-t)
-            
+            wght=map(fun_win, val)
             
             bins=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
             hist,edges = np.histogram(mod_value, bins=bins,weights=wght)
