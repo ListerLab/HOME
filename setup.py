@@ -6,7 +6,7 @@ from setuptools import setup
 
 setup(
     name = 'HOME',
-    version = '2.0',
+    version = '1.0.0',
     description="HOME: Histogram Of MEthylation",
     author = 'akanksha srivastava',
     install_requires = [
