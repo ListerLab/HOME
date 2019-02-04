@@ -516,5 +516,4 @@ if __name__ == "__main__":
                 pool1.join()
                 shutil.rmtree(o.outputpath+'/temp_HOME', ignore_errors=True)
                 remEmptyDir(o.outputpath+'/HOME_DMRs/')
-#
-#       
+  
