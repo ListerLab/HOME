@@ -144,8 +144,8 @@ def pval_format_withrep(df_path):
     mod_pval=1-df.p_value
     df['val']=h.multiply(mod_pval)
     hh=mod_pval.apply(np.exp)
-    df['exp_val']=h.multiply(hh)
-    df['scaled_exp_val']=(df.exp_val-df.exp_val.min())/(df.exp_val.max()-df.exp_val.min())
+    df['exp_val1']=h.multiply(hh)
+    df['exp_val']=(df.exp_val1-df.exp_val1.min())/(df.exp_val1.max()-df.exp_val1.min())
     df=df.fillna(0) 
     return df
     
@@ -179,20 +179,22 @@ def chunker(seq, size):
   
     yield (k,start,stop)    
 def norm_slidingwin_predict_CG(df_file,input_file_path,model_path):
-    b=-0.05632
-    m=1.89323
+    b=-0.123176135253
+    m=1.95258046977
+#    b=-0.05632
+#    m=1.89323
     norm_value=[]
-    input_file1=input_file_path
-    
-    df_file1 = pd.read_csv(input_file1,header=None,delimiter=',')
+    #input_file1=input_file_path
+    x=input_file_path
+    #df_file1 = pd.read_csv(input_file1,header=None,delimiter=',')
 
-    x=[]
+    
     status=[]
     #clf = None
     W=np.load(model_path+"W.npy")
     bb=np.load(model_path+"b.npy")
     #clf = joblib.load(model_path)
-    x=np.array(df_file1)
+   # x=np.array(df_file1)
 
     scaler = preprocessing.StandardScaler().fit(x)
     for i in xrange(len(df_file)-1):
@@ -217,7 +219,7 @@ def norm_slidingwin_predict_CG(df_file,input_file_path,model_path):
 
             status.append(sign_win)
             val=(abs(pos_specific-pos1)/250.0)
-            
+            wght=[]
             
             wght=map(fun_win, val)
             
@@ -237,20 +239,22 @@ def norm_slidingwin_predict_CG(df_file,input_file_path,model_path):
     return (k)
 def norm_slidingwin_predict_nonCG(df_file,input_file_path,model_path):
      
-    b=0.57559 
-    m=2.01748
+#    b=0.57559 
+#    m=2.01748
+    b=0.21610910497
+    m=1.01167212729
     norm_value=[]
-    input_file1=input_file_path
+    #input_file1=input_file_path
+    x=input_file_path
+   # df_file1 = pd.read_csv(input_file1,header=None,delimiter=',')
     
-    df_file1 = pd.read_csv(input_file1,header=None,delimiter=',')
     
-    x=[]
     status=[]
     #clf = None
     W=np.load(model_path+"W.npy")
     bb=np.load(model_path+"b.npy") 
     #clf = joblib.load(model_path)
-    x=np.array(df_file1)
+    #x=np.array(df_file1)
     
     scaler = preprocessing.StandardScaler().fit(x)
     
@@ -730,21 +734,18 @@ def clustandtrim_nonCG2(k,final_dmrs,dis_thres,ncb,len_cutoff):
    
 def norm_slidingwin_predict_nonCG_withoutchunk(df_file,input_file_path,model_path):
      
-    b=0.57559 
-    m=2.01748
+    b=0.21610910497
+    m=1.01167212729
     norm_value=[]
-    input_file1=input_file_path
-    
-    df_file1 = pd.read_csv(input_file1,header=None,delimiter=',')
-
-    x=[]
+    x=input_file_path
+   
     status=[]
     W=np.load(model_path+"W.npy")
     bb=np.load(model_path+"b.npy") 
 #    clf = None
 # 
 #    clf = joblib.load(model_path)
-    x=np.array(df_file1)
+    
 
     scaler = preprocessing.StandardScaler().fit(x)
     for i in xrange(len(df_file)-1):

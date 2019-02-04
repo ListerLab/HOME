@@ -148,15 +148,15 @@ def main(c):
        
             if classes=="CG":
     
-                input_file_path=os.getcwd()+'/training_data/training_data_CG.txt'
-                model_path=os.getcwd()+'/saved_model/CG/'
+                input_file_path=np.load(os.getcwd()+'/training_data/hist_data_CG.npy')
+                            
+                model_path=os.getcwd()+'/saved_model/CG/new/hist/'
                 k=ho.norm_slidingwin_predict_CG(df3,input_file_path,model_path)
                 
             elif classes=="CHG" or classes=="CHH" or classes=="CHN" or classes=="CNN":
        
-                input_file_path=os.getcwd()+'/training_data/training_data_nonCG.txt'
-                
-                model_path=os.getcwd()+'/saved_model/nonCG/'
+                input_file_path=np.load(os.getcwd()+'/training_data/hist_data_nonCG.npy')
+                model_path=os.getcwd()+'/saved_model/nonCG/new/hist/'
                 if nop>1:
                     CHUNKSIZE = int(len(df3)/nop)
                     df_chunk=ho.chunker(df3,CHUNKSIZE)
