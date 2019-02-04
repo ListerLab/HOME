@@ -13,10 +13,6 @@ from sklearn import preprocessing
 #from sklearn.externals import joblib
 import statsmodels.stats.proportion as sm
 
-def fun_win(val):
-     t=1-(min(val,1))
-     return t 
- 
 def fill_na(df_file):
     filter_col = [col for col in list(df_file) if col.startswith(('mc'))]
     filter_col1 = [col for col in list(df_file) if col.startswith(('h'))]
@@ -178,21 +174,23 @@ def smoothing(*a):
         
     return avg_value  
 def norm_slidingwin_predict_CG(df_file,input_file_path,model_path):
-    b=-0.05632
-    m=1.89323 
+    b=-0.123176135253
+    m=1.95258046977
+    #b=-0.05632
+   # m=1.89323 
     norm_value=[]
-    input_file1=input_file_path
-    
-    df_file1 = pd.read_csv(input_file1,header=None,delimiter=',')
+    #input_file1=input_file_path
+    x=input_file_path
+    #df_file1 = pd.read_csv(input_file1,header=None,delimiter=',')
     delta=[]
-    x=[]
+   # x=[]
     status=[]
     W=np.load(model_path+"W.npy")
     bb=np.load(model_path+"b.npy")
 #    clf = None
 # 
 #    clf = joblib.load(model_path)
-    x=np.array(df_file1)
+   # x=np.array(df_file1)
 
     scaler = preprocessing.StandardScaler().fit(x)
     
@@ -219,7 +217,11 @@ def norm_slidingwin_predict_CG(df_file,input_file_path,model_path):
 
             status.append(sign_win)
             val=(abs(pos_specific-pos1)/250.0)
-            wght=map(fun_win, val)
+            wght=[]
+            for i in val:
+                t=min(i,1)
+                wght.append(1-t)
+            
             
             bins=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
             hist,edges = np.histogram(mod_value, bins=bins,weights=wght)
@@ -241,21 +243,21 @@ def norm_slidingwin_predict_CG(df_file,input_file_path,model_path):
     return (k) 
 def norm_slidingwin_predict_nonCG_withoutchunk(df_file,input_file_path,model_path):
      
-    b=0.57559 
-    m=2.01748
+    b=0.21610910497
+    m=1.01167212729
     norm_value=[]
-    input_file1=input_file_path
+    x=input_file_path
     
-    df_file1 = pd.read_csv(input_file1,header=None,delimiter=',')
+    #df_file1 = pd.read_csv(input_file1,header=None,delimiter=',')
 
-    x=[]
+    
     status=[]
     #clf = None
     delta=[]
     W=np.load(model_path+"W.npy")
     bb=np.load(model_path+"b.npy")
     #clf = joblib.load(model_path)
-    x=np.array(df_file1)
+   # x=np.array(df_file1)
 
     scaler = preprocessing.StandardScaler().fit(x)
     for i in xrange(len(df_file)-1):
@@ -280,7 +282,11 @@ def norm_slidingwin_predict_nonCG_withoutchunk(df_file,input_file_path,model_pat
 
             status.append(sign_win)
             val=(abs(pos_specific-pos1)/10.0)
-            wght=map(fun_win, val)
+            wght=[]
+            for i in val:
+                t=min(i,1)
+                wght.append(1-t)
+            
             
             bins=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
             hist,edges = np.histogram(mod_value, bins=bins,weights=wght)
@@ -302,21 +308,22 @@ def norm_slidingwin_predict_nonCG_withoutchunk(df_file,input_file_path,model_pat
  
 def norm_slidingwin_predict_nonCG(df_file,input_file_path,model_path):
      
-    b=0.57559 
-    m=2.01748
+    b=0.21610910497
+    m=1.01167212729
     norm_value=[]
-    input_file1=input_file_path
+    x=input_file_path
     
-    df_file1 = pd.read_csv(input_file1,header=None,delimiter=',')
-    delta=[]
-    x=[]
+    #df_file1 = pd.read_csv(input_file1,header=None,delimiter=',')
+
+    
     status=[]
     #clf = None
+    delta=[]
     W=np.load(model_path+"W.npy")
-    bb=np.load(model_path+"b.npy") 
+    bb=np.load(model_path+"b.npy")
     #clf = joblib.load(model_path)
-    x=np.array(df_file1)
-    
+   # x=np.array(df_file1)
+
     scaler = preprocessing.StandardScaler().fit(x)
     
     for i in df_file[0].index:
@@ -336,8 +343,12 @@ def norm_slidingwin_predict_nonCG(df_file,input_file_path,model_path):
     
             status.append(sign_win)
             val=(abs(pos_specific-pos1)/10.0)
-            wght=map(fun_win, val)
-          
+            wght=[]
+            for i in val:
+                t=min(i,1)
+                wght.append(1-t)
+         
+            
             bins=np.linspace(0,1,11) 
             hist,edges = np.histogram(mod_value, bins=bins,weights=wght)
             k=float(sum(hist))
